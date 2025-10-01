@@ -1,0 +1,2683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="https://images.juniorbay.com/icon/favicon.png">
+    <style>
+        :root { 
+            --bg:#0b1220; 
+            --card:#121a2b; 
+            --muted:#8892a6; 
+            --text:#e6edf3; 
+            --brand:#6aa8ff; 
+            --accent:#22c55e; 
+            --danger:#ef4444; 
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: var(--card);
+            border-bottom: 1px solid #1d2942;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .nav {
+            background: #0f1626;
+            border-bottom: 1px solid #263453;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 2rem;
+            padding: 0 1.5rem;
+        }
+
+        .nav-tab {
+            background: none;
+            border: none;
+            padding: 1rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--muted);
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-tab:hover {
+            color: var(--text);
+            border-bottom-color: var(--brand);
+        }
+
+        .nav-tab.active {
+            color: var(--brand);
+            border-bottom-color: var(--brand);
+        }
+
+        .main {
+            padding: 1.5rem 0;
+        }
+
+        .tab-content {
+            display: none;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid #1d2942;
+            border-radius: 16px;
+            box-shadow: 0 6px 24px rgba(0,0,0,.25);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            padding: 1.5rem 1.5rem 1rem;
+            border-bottom: 1px solid #1d2942;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .pane {
+            padding: 18px;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin: 0 0 10px;
+            color: var(--text);
+        }
+
+        h2 {
+            font-size: 16px;
+            margin: 16px 0 8px;
+            color: #c7d2fe;
+        }
+
+        h3 {
+            font-size: 14px;
+            margin: 12px 0 6px;
+            color: #a5b4fc;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 4px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        input, select, button, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #263453;
+            background: #0f1626;
+            color: var(--text);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: 2px solid #35528b;
+            border-color: #35528b;
+        }
+
+        button {
+            cursor: pointer;
+            background: var(--brand);
+            border: 0;
+            color: #0b1220;
+            font-weight: 600;
+        }
+
+        button.secondary {
+            background: #1e293b;
+            color: #cbd5e1;
+            border: 1px solid #334155;
+        }
+
+        button.danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        button.small {
+            padding: 6px 10px;
+            font-size: 12px;
+            width: auto;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .row > * {
+            flex: 1;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .ok {
+            color: var(--accent);
+        }
+
+        .err {
+            color: var(--danger);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .mt8 { margin-top: 8px; }
+        .mt12 { margin-top: 12px; }
+        .mt16 { margin-top: 16px; }
+        .mt24 { margin-top: 24px; }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #0f1a2e;
+            border: 1px solid #233657;
+            color: #9fb3cc;
+            font-size: 12px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .grid-two {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: var(--card);
+            border: 1px solid #1d2942;
+            border-radius: 16px;
+            box-shadow: 0 6px 24px rgba(0,0,0,.25);
+        }
+
+        .login-header {
+            padding: 1.5rem 1.5rem 1rem;
+            text-align: center;
+        }
+
+        .login-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .login-description {
+            color: var(--muted);
+            font-size: 0.875rem;
+        }
+
+        .login-content {
+            padding: 0 1.5rem 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--muted);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #263453;
+            border-radius: 0.375rem;
+            background: #0f1626;
+            color: var(--text);
+            font-size: 0.875rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(106, 168, 255, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--brand);
+            color: #0b1220;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+            margin-bottom: 1rem;
+        }
+
+        .btn:hover {
+            background-color: #5a98f0;
+        }
+
+        .login-links {
+            text-align: center;
+        }
+
+        .login-link {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--brand);
+            text-decoration: none;
+        }
+
+        .login-link:hover {
+            text-decoration: underline;
+        }
+
+        .login-link.secondary {
+            color: var(--muted);
+        }
+
+        .login-link.secondary:hover {
+            color: var(--brand);
+        }
+
+        .offer-item {
+            background: #0f1a2e;
+            border: 1px solid #233657;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+        }
+
+        .offer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .offer-key {
+            color: #c7d2fe;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .client-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #263453;
+            border-radius: 8px;
+            padding: 8px;
+            background: #0f1626;
+        }
+
+        .client-item {
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 2px 0;
+        }
+
+        .client-item:hover {
+            background: #1e293b;
+        }
+
+        .client-item.active {
+            background: #35528b;
+            color: white;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 0.5rem;
+            background: #1e293b;
+            color: var(--muted);
+            border: 1px solid #334155;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+
+        .auth-tab.active {
+            background: var(--brand);
+            color: #0b1220;
+            border-color: var(--brand);
+        }
+
+        .auth-view {
+            display: none;
+        }
+
+        .auth-view.active {
+            display: block;
+        }
+
+        .message {
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            margin: 0.5rem 0;
+            font-size: 0.875rem;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .message.success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .message.info {
+            background: rgba(106, 168, 255, 0.1);
+            border: 1px solid var(--brand);
+            color: var(--brand);
+        }
+
+        /* Orders specific styles */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: #0f1a2e;
+            border: 1px solid #233657;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--brand);
+            display: block;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .filters {
+            background: #0f1a2e;
+            border: 1px solid #233657;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group button {
+            width: auto;
+            padding: 0.5rem 1rem;
+        }
+
+        .order-card {
+            background: #0f1a2e;
+            border: 1px solid #233657;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .order-id {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text);
+        }
+
+        .order-date {
+            color: var(--muted);
+            font-size: 0.875rem;
+        }
+
+        .order-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .detail-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-weight: 700;
+            color: var(--muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .detail-value {
+            color: var(--text);
+            font-size: 0.875rem;
+        }
+
+        .product-name {
+            color: var(--brand);
+            font-weight: 600;
+        }
+
+        .amount {
+            color: var(--accent);
+            font-weight: 800;
+        }
+
+        .fulfill-btn {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.75rem;
+            width: auto;
+        }
+
+        .fulfill-btn:disabled {
+            background: var(--muted);
+            cursor: not-allowed;
+        }
+
+        .loading-spinner {
+            border: 2px solid #263453;
+            border-top: 2px solid var(--brand);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .no-orders {
+            text-align: center;
+            padding: 2rem;
+            color: var(--muted);
+        }
+
+        .load-more-container {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .load-more-btn {
+            background: var(--brand);
+            color: var(--bg);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            width: auto;
+        }
+
+        .load-more-btn:disabled {
+            background: var(--muted);
+        }
+
+        .order-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .order-badge.badge-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .order-badge.badge-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        .order-badge.badge-warn {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+            border: 1px solid #ffc107;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card);
+            border: 1px solid #1d2942;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        .modal-body {
+            margin-bottom: 1.5rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        .rate-option {
+            background: #0f1a2e;
+            border: 1px solid #233657;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .rate-option:hover {
+            border-color: var(--brand);
+            background: #1a2540;
+        }
+
+        .rate-option.selected {
+            border-color: var(--brand);
+            background: #1a2540;
+        }
+
+        .rate-option input[type="radio"] {
+            width: auto;
+            margin-right: 0.5rem;
+        }
+
+        .button-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .order-details {
+                grid-template-columns: 1fr;
+            }
+            .filter-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-group input {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Section (shown by default) -->
+    <div id="login-section">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <h2 class="login-title">Admin Login</h2>
+                    <p class="login-description">Enter your credentials to access the admin panel</p>
+                    <div class="badge mt12">Env: <span id="envLabel" class="mono"></span></div>
+                </div>
+                <div class="login-content">
+                    <!-- Auth Tabs -->
+                    <div class="auth-tabs">
+                        <button class="auth-tab active" data-auth-tab="login">Login</button>
+                        <button class="auth-tab" data-auth-tab="register">Register</button>
+                        <button class="auth-tab" data-auth-tab="forgot">Forgot</button>
+                    </div>
+
+                    <!-- Login View -->
+                    <div id="auth-login" class="auth-view active">
+                        <div class="form-group">
+                            <label for="loginEmail" class="form-label">Email</label>
+                            <input type="email" id="loginEmail" class="form-input" placeholder="admin@example.com" autocomplete="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPass" class="form-label">Password</label>
+                            <input type="password" id="loginPass" class="form-input" placeholder="Enter your password" autocomplete="current-password" required>
+                        </div>
+                        <button type="button" id="btnLogin" class="btn">Sign In</button>
+                        <div id="loginMsg"></div>
+                    </div>
+
+                    <!-- Register View -->
+                    <div id="auth-register" class="auth-view">
+                        <div class="form-group">
+                            <label for="regEmail" class="form-label">Email</label>
+                            <input type="email" id="regEmail" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="regPass" class="form-label">Password</label>
+                            <input type="password" id="regPass" class="form-input" required>
+                        </div>
+                        <button type="button" id="btnRegister" class="btn">Create Account</button>
+                        <div class="message info mt12">After sign-up, check your email for the verification code.</div>
+
+                        <h3 class="mt16">Confirm Email</h3>
+                        <div class="form-group">
+                            <label for="confEmail" class="form-label">Email</label>
+                            <input type="email" id="confEmail" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="confCode" class="form-label">Verification Code</label>
+                            <input type="text" id="confCode" class="form-input">
+                        </div>
+                        <div class="row">
+                            <button type="button" id="btnConfirm" class="btn">Confirm</button>
+                            <button type="button" id="btnResend" class="btn secondary">Resend</button>
+                        </div>
+                        <div id="regMsg"></div>
+                    </div>
+
+                    <!-- Forgot Password View -->
+                    <div id="auth-forgot" class="auth-view">
+                        <h3>Reset Password</h3>
+                        <div class="form-group">
+                            <label for="fpEmail" class="form-label">Email</label>
+                            <input type="email" id="fpEmail" class="form-input">
+                        </div>
+                        <button type="button" id="btnForgot" class="btn">Send Reset Code</button>
+
+                        <h3 class="mt16">Confirm New Password</h3>
+                        <div class="form-group">
+                            <label for="fpConfEmail" class="form-label">Email</label>
+                            <input type="email" id="fpConfEmail" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="fpCode" class="form-label">Code</label>
+                            <input type="text" id="fpCode" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="fpNewPass" class="form-label">New Password</label>
+                            <input type="password" id="fpNewPass" class="form-input">
+                        </div>
+                        <button type="button" id="btnConfirmNew" class="btn">Set New Password</button>
+                        <div id="fpMsg"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App (hidden by default) -->
+    <div id="main-app" class="hidden">
+        <header class="header">
+            <div class="header-content">
+                <div class="row">
+                    <h1>Admin Dashboard</h1>
+                    <div class="badge">Signed in: <span id="who" class="mono"></span></div>
+                    <button id="btnSignOut" class="secondary small">Sign Out</button>
+                </div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <div class="nav-content">
+                <button class="nav-tab active" data-tab="keys">Stripe Keys</button>
+                <button class="nav-tab" data-tab="offers">Offers</button>
+                <button class="nav-tab" data-tab="orders">Orders</button>
+                <button class="nav-tab" data-tab="shipping">Shipping</button>
+                <button class="nav-tab" data-tab="config">Config</button>
+            </div>
+        </nav>
+
+        <main class="main">
+            <!-- Stripe Keys Tab -->
+            <div id="keys-tab" class="tab-content active">
+                <div class="card">
+                    <div class="pane">
+                        <h1>Tenant Stripe Keys</h1>
+                        <div class="muted">Use your tenant's <span class="mono">clientID</span> (the ID you pass from the offer page).</div>
+
+                        <h2 class="mt16">Lookup / Update</h2>
+                        <label>clientID</label>
+                        <input id="clientID" class="mono" placeholder="c85d5a3d-663e-4372-bc71-376881d5f63d" />
+
+                        <div class="row mt8">
+                            <button id="btnGet">Get</button>
+                            <button id="btnSave" class="secondary">Save</button>
+                        </div>
+
+                        <label class="mt16">mode</label>
+                        <select id="mode">
+                            <option value="test">test</option>
+                            <option value="live">live</option>
+                        </select>
+
+                        <div class="grid grid-two mt12">
+                            <div>
+                                <label>pk_test</label><input id="pk_test" class="mono" />
+                                <label>sk_test (plaintext)</label><input id="sk_test" class="mono" />
+                                <label>wh_secret_test</label><input id="wh_test" class="mono" />
+                            </div>
+                            <div>
+                                <label>pk_live</label><input id="pk_live" class="mono" />
+                                <label>sk_live (plaintext)</label><input id="sk_live" class="mono" />
+                                <label>wh_secret_live</label><input id="wh_live" class="mono" />
+                            </div>
+                        </div>
+
+                        <div class="row mt16">
+                            <button id="btnVerify" title="Calls /admin/verify">Verify Webhook Secret</button>
+                            <div id="verifyMsg" class="muted"></div>
+                        </div>
+
+                        <div id="apiMsg" class="mt12 muted"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Offers Tab -->
+            <div id="offers-tab" class="tab-content">
+                <div class="card">
+                    <div class="pane">
+                        <h1>Offer Configuration</h1>
+                        <div class="muted">Manage offers for the selected tenant.</div>
+
+                        <h2 class="mt16">Base Configuration</h2>
+                        <label>Base Frontend URL</label>
+                        <input id="baseFrontendUrl" class="mono" placeholder="https://juniorbay.com/dist/clientID/" />
+
+                        <div class="row mt16">
+                            <button id="btnGetOffers">Load Offers</button>
+                            <button id="btnSaveOffers" class="secondary">Save Offers</button>
+                        </div>
+
+                        <div class="row mt8">
+                            <h2 style="margin:0">Offers</h2>
+                            <button id="btnAddOffer" class="small secondary">+ Add Offer</button>
+                        </div>
+
+                        <div id="offersContainer" class="mt12">
+                            <!-- Offers will be dynamically added here -->
+                        </div>
+
+                        <div id="offersMsg" class="mt12 muted"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div id="orders-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h1 class="card-title">Order Management</h1>
+                        <div class="muted">View and manage orders for your client</div>
+                    </div>
+                    <div class="card-content">
+                        <!-- Stats -->
+                        <div class="stats">
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-orders">0</span>
+                                <span class="stat-label">Total Unfulfilled Orders</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-revenue">$0.00</span>
+                                <span class="stat-label">Pending Revenue</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="avg-order">$0.00</span>
+                                <span class="stat-label">Average Order Value</span>
+                            </div>
+                        </div>
+
+                        <!-- Filters -->
+                        <div class="filters">
+                            <div class="filter-group">
+                                <input type="text" id="search-customer" placeholder="Search by customer name or email..."/>
+                                <input type="text" id="search-product" placeholder="Search by product..."/>
+                                <label style="display:flex;align-items:center;gap:8px;">
+                                    <input type="checkbox" id="toggle-fulfilled" style="width:auto;"/> Show fulfilled
+                                </label>
+                                <button onclick="clearOrderFilters()" class="secondary small">Clear</button>
+                                <button onclick="refreshOrders()" class="small">Refresh</button>
+                            </div>
+                        </div>
+
+                        <!-- Error/Success Messages -->
+                        <div id="order-error-container"></div>
+                        <div id="order-success-container"></div>
+
+                        <!-- Orders List -->
+                        <div id="orders-list">
+                            <div class="loading-spinner"></div>
+                        </div>
+
+                        <!-- Load More -->
+                        <div class="load-more-container" id="load-more-container" style="display:none">
+                            <button class="load-more-btn" id="load-more-btn">Load More Orders</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping Tab -->
+            <div id="shipping-tab" class="tab-content">
+                <div class="card">
+                    <div class="pane">
+                        <h1>Shipping Configuration</h1>
+                        <div class="muted">Configure automated shipping label generation for your orders.</div>
+
+                        <h2 class="mt16">Shipping Provider</h2>
+                        <label>Select Provider</label>
+                        <select id="shippingProvider">
+                            <option value="">-- No Shipping (Manual) --</option>
+                            <option value="shippo">Shippo</option>
+                            <option value="easypost">EasyPost</option>
+                            <option value="shipstation">ShipStation</option>
+                            <option value="easyship">EasyShip</option>
+                        </select>
+
+                        <div id="shippingApiKeySection" class="mt16 hidden">
+                            <label>API Key</label>
+                            <input id="shippingApiKey" class="mono" type="password" placeholder="Enter API key"/>
+                            
+                            <div id="shipstationSecretSection" class="mt12 hidden">
+                                <label>API Secret (ShipStation only)</label>
+                                <input id="shippingApiSecret" class="mono" type="password" placeholder="Enter API secret"/>
+                            </div>
+
+                            <label class="mt12" style="display:flex;align-items:center;gap:8px;">
+                                <input type="checkbox" id="shippingTestMode" checked style="width:auto;"/> Test Mode
+                            </label>
+                        </div>
+
+                        <h2 class="mt24">Default Ship-From Address</h2>
+                        <div class="grid grid-two">
+                            <div>
+                                <label>Company Name</label>
+                                <input id="shipFromName" placeholder="Your Company Inc."/>
+                                <label>Street Address</label>
+                                <input id="shipFromStreet1" placeholder="123 Main Street"/>
+                                <label>Apt/Suite (optional)</label>
+                                <input id="shipFromStreet2" placeholder="Suite 100"/>
+                                <label>City</label>
+                                <input id="shipFromCity" placeholder="San Francisco"/>
+                            </div>
+                            <div>
+                                <label>State/Province</label>
+                                <input id="shipFromState" placeholder="CA"/>
+                                <label>ZIP/Postal Code</label>
+                                <input id="shipFromZip" placeholder="94105"/>
+                                <label>Country Code</label>
+                                <input id="shipFromCountry" placeholder="US" value="US"/>
+                                <label>Phone</label>
+                                <input id="shipFromPhone" placeholder="+1-555-0100"/>
+                            </div>
+                        </div>
+
+                        <h2 class="mt24">Default Package Dimensions</h2>
+                        <div class="grid grid-two">
+                            <div>
+                                <label>Length (inches)</label>
+                                <input id="parcelLength" type="number" value="10" min="1"/>
+                                <label>Width (inches)</label>
+                                <input id="parcelWidth" type="number" value="8" min="1"/>
+                            </div>
+                            <div>
+                                <label>Height (inches)</label>
+                                <input id="parcelHeight" type="number" value="4" min="1"/>
+                                <label>Weight (pounds)</label>
+                                <input id="parcelWeight" type="number" value="1" min="0.1" step="0.1"/>
+                            </div>
+                        </div>
+
+                        <h2 class="mt24">Automation Options</h2>
+                        <label style="display:flex;align-items:center;gap:8px;">
+                            <input type="checkbox" id="autoFulfill" style="width:auto;"/> 
+                            Auto-create shipping labels on payment success
+                        </label>
+                        <div class="muted mt8">When enabled, labels will be automatically created via webhook after successful payments.</div>
+
+                        <div class="row mt24">
+                            <button id="btnSaveShipping">Save Shipping Config</button>
+                            <button id="btnTestShipping" class="secondary">Test Connection</button>
+                        </div>
+
+                        <div id="shippingMsg" class="mt12 muted"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Config Tab -->
+            <div id="config-tab" class="tab-content">
+                <div class="card">
+                    <div class="pane">
+                        <h1>Tenant Configuration</h1>
+                        <div class="muted">Customize email messages sent to customers for various events.</div>
+
+                        <div class="mt24">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label style="margin: 0; font-weight: 600;">Just for You Message</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="btnDefaultJustForYou" class="small secondary">Default</button>
+                                    <button id="btnSaveJustForYou" class="small">Save</button>
+                                </div>
+                            </div>
+                            <textarea id="msgJustForYou" rows="4" placeholder="Message shown to customers on personalized offers..."></textarea>
+                            <div class="muted mt8" style="font-size: 11px;">Shown on offer pages as a personalized message</div>
+                        </div>
+
+                        <div class="mt24">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label style="margin: 0; font-weight: 600;">Order Fulfilled Message</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="btnDefaultOrderFulfilled" class="small secondary">Default</button>
+                                    <button id="btnSaveOrderFulfilled" class="small">Save</button>
+                                </div>
+                            </div>
+                            <textarea id="msgOrderFulfilled" rows="6" placeholder="Your order has been shipped!&#10;&#10;Tracking number: {tracking_number}&#10;Track your package: {tracking_url}"></textarea>
+                            <div class="muted mt8" style="font-size: 11px;">Sent when shipping label is created. Use {tracking_number} and {tracking_url} as placeholders.</div>
+                        </div>
+
+                        <div class="mt24">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label style="margin: 0; font-weight: 600;">Refund Message</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="btnDefaultRefund" class="small secondary">Default</button>
+                                    <button id="btnSaveRefund" class="small">Save</button>
+                                </div>
+                            </div>
+                            <textarea id="msgRefund" rows="4" placeholder="Your refund has been processed. Please allow 5-10 business days for the funds to appear in your account."></textarea>
+                            <div class="muted mt8" style="font-size: 11px;">Sent when a refund is issued via Stripe</div>
+                        </div>
+
+                        <div class="mt24">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label style="margin: 0; font-weight: 600;">Return Label Message</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="btnDefaultReturnLabel" class="small secondary">Default</button>
+                                    <button id="btnSaveReturnLabel" class="small">Save</button>
+                                </div>
+                            </div>
+                            <textarea id="msgReturnLabel" rows="6" placeholder="A return label has been created for your order.&#10;&#10;Return tracking: {tracking_number}&#10;Download label: {label_url}"></textarea>
+                            <div class="muted mt8" style="font-size: 11px;">Sent when a return shipping label is created. Use {tracking_number} and {label_url} as placeholders.</div>
+                        </div>
+
+                        <div class="mt24">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label style="margin: 0; font-weight: 600;">Thank You Message</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="btnDefaultThankYou" class="small secondary">Default</button>
+                                    <button id="btnSaveThankYou" class="small">Save</button>
+                                </div>
+                            </div>
+                            <textarea id="msgThankYou" rows="4" placeholder="Thank you for your order! We appreciate your business."></textarea>
+                            <div class="muted mt8" style="font-size: 11px;">Sent as order confirmation after successful payment</div>
+                        </div>
+
+                        <div class="row mt24">
+                            <button id="btnSaveAllConfig" style="background: var(--accent);">Save All Messages</button>
+                            <button id="btnLoadDefaultsAll" class="secondary">Load All Defaults</button>
+                        </div>
+
+                        <div id="configMsg" class="mt12 muted"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Cognito SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.10/dist/amazon-cognito-identity.min.js"></script>
+    <script>
+        // ======== CONFIG ========
+        const CONFIG = {
+            region: 'us-west-2',
+            userPoolId: 'us-west-2_y3y4RSL5w',
+            userPoolWebClientId: 'd3v79k0pa9qibco7rpqlda8vd',
+            apiBase: 'https://api-dev.juniorbay.com',
+        };
+
+        // ======== ORDERS STATE ========
+        let allOrders = [];
+        let filteredOrders = [];
+        let ordersNextKey = null;
+        let ordersHasMore = true;
+        let ordersIsLoading = false;
+        let totalUnfulfilledCount = 0;
+
+        // ======== Cognito helpers ========
+        const Cognito = AmazonCognitoIdentity;
+        const pool = new Cognito.CognitoUserPool({
+            UserPoolId: CONFIG.userPoolId,
+            ClientId: CONFIG.userPoolWebClientId
+        });
+
+        let currentClients = [];
+        let currentOfferData = {};
+        let currentClientID = null;
+
+        function setMsg(id, text, kind = '') {
+            const el = document.getElementById(id);
+            if (el) {
+                el.className = kind ? `message ${kind}` : 'muted';
+                el.textContent = text || '';
+            }
+        }
+
+        function currentUser() {
+            return pool.getCurrentUser();
+        }
+
+        function getSession() {
+            return new Promise((resolve, reject) => {
+                const cu = currentUser();
+                if (!cu) return reject(new Error('Not signed in'));
+                cu.getSession((err, session) => {
+                    if (err) return reject(err);
+                    if (!session || !session.isValid()) return reject(new Error('Invalid session'));
+                    resolve(session);
+                });
+            });
+        }
+
+        // ======== UI State Management ========
+        function showMainApp() {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+        }
+
+        function showLogin() {
+            document.getElementById('login-section').classList.remove('hidden');
+            document.getElementById('main-app').classList.add('hidden');
+        }
+
+        function switchAuthTab(tabName) {
+            document.querySelectorAll('.auth-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.authTab === tabName);
+            });
+            document.querySelectorAll('.auth-view').forEach(view => {
+                view.classList.toggle('active', view.id === `auth-${tabName}`);
+            });
+        }
+
+        function switchMainTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === tabName);
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === `${tabName}-tab`);
+            });
+            
+            if (tabName === 'orders' && currentClientID) {
+                loadOrdersForClient();
+            }
+        }
+
+        // ======== Auth Tab Switching ========
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                switchAuthTab(tab.dataset.authTab);
+            });
+        });
+
+        // ======== Main Tab Switching ========
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                switchMainTab(tab.dataset.tab);
+            });
+        });
+
+        // ======== Environment Label ========
+        document.getElementById('envLabel').textContent = 
+            (CONFIG.apiBase.includes('/prod') ? 'prod' : 'dev');
+
+        // ======== API helpers ========
+        async function authedFetch(path, opts = {}) {
+            try {
+                const session = await getSession();
+                const idToken = session.getIdToken().getJwtToken();
+
+                const headers = {
+                    'Authorization': `Bearer ${idToken}`,
+                    'Content-Type': 'application/json',
+                    ...(opts.headers || {}),
+                };
+
+                const init = {
+                    method: opts.method || 'GET',
+                    headers,
+                    mode: 'cors',
+                    credentials: 'omit',
+                    body: opts.body != null
+                        ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body))
+                        : undefined,
+                };
+
+                const resp = await fetch(`${CONFIG.apiBase}${path}`, init);
+                const txt = await resp.text();
+                
+                let body;
+                try { 
+                    body = JSON.parse(txt);
+                } catch { 
+                    body = { raw: txt };
+                }
+                
+                return { ok: resp.ok, status: resp.status, body, headers: resp.headers };
+                
+            } catch (error) {
+                console.error('authedFetch error:', error);
+                throw error;
+            }
+        }
+
+        // ======== ORDERS API ========
+        async function listOrdersFromAPI(clientID) {
+            const params = new URLSearchParams({ limit: '10' });
+            if (clientID) params.set('clientID', clientID);
+            if (ordersNextKey) params.set('lastKey', ordersNextKey);
+            
+            const response = await fetch(`${CONFIG.apiBase}/orders?${params.toString()}`, { 
+                method: 'GET'
+            });
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        }
+
+        async function markOrderFulfilled(orderId) {
+            const response = await fetch(`${CONFIG.apiBase}/orders/${encodeURIComponent(orderId)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fulfilled: true })
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        }
+
+        // ======== ORDERS MANAGEMENT ========
+        async function loadOrdersForClient() {
+            if (!currentClientID || ordersIsLoading) return;
+            ordersIsLoading = true;
+            showOrdersLoading();
+            try {
+                const data = await listOrdersFromAPI(currentClientID);
+                
+                if (data.totalCount !== undefined) {
+                    totalUnfulfilledCount = data.totalCount;
+                }
+                
+                if (ordersNextKey) {
+                    allOrders = allOrders.concat(data.orders || []);
+                } else {
+                    allOrders = data.orders || [];
+                }
+                
+                ordersNextKey = data.nextKey || null;
+                ordersHasMore = !!data.hasMore;
+                filterOrders();
+                updateOrdersStats();
+                updateLoadMoreButton();
+            } catch (err) {
+                console.error('Orders loading error:', err);
+                showOrderError('Failed to load orders. Please try again.');
+            } finally {
+                ordersIsLoading = false;
+            }
+        }
+
+        async function loadMoreOrders() {
+            if (!ordersHasMore || ordersIsLoading || !currentClientID) {
+                disableLoadMoreButton();
+                return;
+            }
+            await loadOrdersForClient();
+        }
+
+        function disableLoadMoreButton() {
+            const container = document.getElementById('load-more-container');
+            const btn = document.getElementById('load-more-btn');
+            if (!container || !btn) return;
+            container.style.display = 'none';
+            btn.disabled = true;
+        }
+
+        function filterOrders() {
+            const customerSearch = document.getElementById('search-customer').value.toLowerCase();
+            const productSearch = document.getElementById('search-product').value.toLowerCase();
+            const showFulfilled = document.getElementById('toggle-fulfilled').checked;
+
+            filteredOrders = (allOrders || []).filter(order => {
+                const name = (order.customer_name || '').toLowerCase();
+                const email = (order.customer_email || '').toLowerCase();
+                const prod = (order.product_name || '').toLowerCase();
+
+                const customerMatch = !customerSearch || name.includes(customerSearch) || email.includes(customerSearch);
+                const productMatch = !productSearch || prod.includes(productSearch);
+
+                const isFulfilled = (order.fulfilled === true || order.fulfilled === 'true');
+                const paid = (order.payment_status || '').toLowerCase() === 'succeeded';
+
+                const statusMatch = paid && (showFulfilled ? true : !isFulfilled);
+
+                return customerMatch && productMatch && statusMatch;
+            });
+
+            renderOrders();
+            updateOrdersStats();
+        }
+
+        function renderOrders() {
+            const list = document.getElementById('orders-list');
+
+            if (filteredOrders.length === 0) {
+                list.innerHTML = `
+                    <div class="no-orders">
+                        <h3>No orders need fulfillment</h3>
+                        <p>Everything paid is shipped—or your search filters are too narrow.</p>
+                    </div>`;
+                return;
+            }
+
+            list.innerHTML = filteredOrders.map(order => {
+                const isFulfilled = (order.fulfilled === true || order.fulfilled === 'true');
+                const paid = (order.payment_status || '').toLowerCase() === 'succeeded';
+                const badge = !paid
+                    ? `<span class="order-badge badge-warn">Payment Pending</span>`
+                    : isFulfilled
+                        ? `<span class="order-badge badge-success">Fulfilled</span>`
+                        : `<span class="order-badge badge-danger">Needs Fulfillment</span>`;
+
+                const shipAddr = order.shipping_address && order.shipping_address !== 'N/A' ? order.shipping_address : 'N/A';
+                
+                const hasTracking = order.tracking_number && order.tracking_number !== 'N/A';
+                const trackingInfo = hasTracking ? `
+                    <div class="detail-value" style="margin-top: 8px;">
+                        <strong>Tracking:</strong> ${escapeHtml(order.tracking_number)}<br>
+                        ${order.tracking_url ? `<a href="${escapeHtml(order.tracking_url)}" target="_blank" style="color: var(--brand);">Track Package</a>` : ''}
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="order-card" data-order-id="${order.order_id}">
+                        <div class="order-header">
+                            <div class="order-id">Order #${escapeHtml(order.order_id)}</div>
+                            <div class="order-date">${escapeHtml(order.order_date)} &nbsp; ${badge}</div>
+                        </div>
+
+                        <div class="order-details">
+                            <div class="detail-group">
+                                <div class="detail-label">Customer</div>
+                                <div class="detail-value">${escapeHtml(order.customer_name || 'N/A')}</div>
+                                <div class="detail-value">${escapeHtml(order.customer_email || 'N/A')}</div>
+                                <div class="detail-value">${escapeHtml(order.customer_phone || 'N/A')}</div>
+                            </div>
+
+                            <div class="detail-group">
+                                <div class="detail-label">Product</div>
+                                <div class="detail-value product-name">${escapeHtml(order.product_name || 'N/A')}</div>
+                                <div class="detail-value amount">${formatCurrency(order.amount, order.currency)}</div>
+                            </div>
+
+                            <div class="detail-group">
+                                <div class="detail-label">Shipping Address</div>
+                                <div class="detail-value">${escapeHtml(shipAddr)}</div>
+                                ${trackingInfo}
+                            </div>
+
+                            <div class="detail-group">
+                                <div class="detail-label">Actions</div>
+                                ${!hasTracking && paid && !isFulfilled ? `
+                                    <button class="fulfill-btn" style="background: var(--brand); margin-bottom: 8px;" onclick="createShippingLabel('${order.order_id}')">
+                                        Create Label
+                                    </button>
+                                ` : ''}
+                                <button class="fulfill-btn" ${!paid || isFulfilled ? 'disabled' : ''} onclick="fulfillOrder('${order.order_id}')">
+                                    ${isFulfilled ? 'Already Fulfilled' : 'Mark as Fulfilled'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        async function fulfillOrder(orderId) {
+            if (!confirm('Mark this order as fulfilled? This will send a confirmation email to the customer.')) return;
+
+            const btn = document.querySelector(`[data-order-id="${orderId}"] .fulfill-btn`);
+            const originalText = btn.textContent;
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Processing...';
+                
+                // Send email with manual fulfillment (no tracking)
+                await authedFetch('/admin/send-fulfillment-email', {
+                    method: 'POST',
+                    body: { 
+                        order_id: orderId,
+                        manual: true 
+                    }
+                });
+                
+                await markOrderFulfilled(orderId);
+
+                allOrders = allOrders.map(o => o.order_id === orderId ? { ...o, fulfilled: true } : o);
+                filterOrders();
+                showOrderSuccess('Order marked as fulfilled and customer notified!');
+            } catch (err) {
+                console.error('Fulfill order error:', err);
+                showOrderError('Failed to mark order as fulfilled. Please try again.');
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function createShippingLabel(orderId) {
+            const btn = document.querySelector(`[data-order-id="${orderId}"] .fulfill-btn[onclick*="createShippingLabel"]`);
+            if (!btn) return;
+            
+            const originalText = btn.textContent;
+            const originalDisabled = btn.disabled;
+            
+            try {
+                // Show loading state on button
+                btn.disabled = true;
+                btn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 8px;"><span class="button-spinner"></span>Fetching rates...</span>';
+                
+                // First, get rates to show in confirmation
+                const clientID = document.getElementById('clientID').value.trim();
+                const res = await authedFetch(`/admin/shipping-config?clientID=${encodeURIComponent(clientID)}`);
+                
+                if (!res.ok || !res.body) {
+                    showOrderError('Failed to load shipping configuration');
+                    btn.disabled = originalDisabled;
+                    btn.textContent = originalText;
+                    return;
+                }
+                
+                const config = res.body;
+                const shippingConfig = config.shipping_config || {};
+                
+                // Get rates for this order
+                const ratesRes = await authedFetch('/admin/get-rates', {
+                    method: 'POST',
+                    body: { order_id: orderId }
+                });
+                
+                // Restore button state
+                btn.disabled = originalDisabled;
+                btn.textContent = originalText;
+                
+                if (!ratesRes.ok || !ratesRes.body.rates || ratesRes.body.rates.length === 0) {
+                    showOrderError('Failed to get shipping rates');
+                    return;
+                }
+                
+                const rates = ratesRes.body.rates;
+                
+                // Find cheapest rate as default (or use first rate)
+                const defaultRate = rates.reduce((prev, curr) => 
+                    parseFloat(curr.rate) < parseFloat(prev.rate) ? curr : prev
+                );
+                
+                showShippingConfirmation(orderId, defaultRate, rates);
+                
+            } catch (err) {
+                console.error('Create label error:', err);
+                showOrderError('Failed to initiate label creation');
+                btn.disabled = originalDisabled;
+                btn.textContent = originalText;
+            }
+        }
+
+        function showShippingConfirmation(orderId, defaultRate, allRates) {
+            const modal = document.getElementById('shippingModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            const modalEdit = document.getElementById('modalEdit');
+            
+            // Reset modal state
+            modalTitle.textContent = 'Confirm Shipping Label';
+            modalEdit.style.display = 'inline-block';
+            
+            const price = `$${parseFloat(defaultRate.rate).toFixed(2)}`;
+            const days = defaultRate.delivery_days ? `${defaultRate.delivery_days} days` : 'N/A';
+            
+            modalBody.innerHTML = `
+                <p><strong>${defaultRate.carrier} ${defaultRate.service}</strong> - ${price} &middot; ${days} selected.</p>
+                <p>Click 'Create Label' to continue with this carrier and service, or 'Change Carrier/Rate' to see other options.</p>
+            `;
+            
+            modal.classList.add('active');
+            
+            // Store rates for later use
+            modal.dataset.orderId = orderId;
+            modal.dataset.rates = JSON.stringify(allRates);
+            modal.dataset.defaultRateId = defaultRate.rate_id;
+            
+            // Set up button handlers
+            document.getElementById('modalCancel').onclick = () => {
+                modal.classList.remove('active');
+            };
+            
+            document.getElementById('modalOk').onclick = () => {
+                modal.classList.remove('active');
+                proceedWithSelectedRate(orderId, null, defaultRate.rate_id);
+            };
+            
+            document.getElementById('modalEdit').onclick = () => {
+                showRateSelection(orderId, allRates);
+            };
+        }
+
+        async function proceedWithDefaultLabel(orderId, carrier, service) {
+            const btn = document.querySelector(`[data-order-id="${orderId}"] .fulfill-btn[onclick*="createShippingLabel"]`);
+            if (!btn) return;
+            
+            const originalText = btn.textContent;
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Creating...';
+                
+                const response = await authedFetch('/admin/create-label', {
+                    method: 'POST',
+                    body: { 
+                        order_id: orderId,
+                        carrier: carrier,
+                        service: service
+                    }
+                });
+
+                if (response.ok && response.body.success) {
+                    showOrderSuccess(`Label created! Tracking: ${response.body.tracking_number || 'N/A'}`);
+                    
+                    allOrders = allOrders.map(o => {
+                        if (o.order_id === orderId) {
+                            return {
+                                ...o,
+                                tracking_number: response.body.tracking_number,
+                                tracking_url: response.body.tracking_url,
+                                fulfilled: true
+                            };
+                        }
+                        return o;
+                    });
+                    filterOrders();
+                } else {
+                    showOrderError(`Failed to create label: ${response.body.error || 'Unknown error'}`);
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
+            } catch (err) {
+                console.error('Create label error:', err);
+                showOrderError('Failed to create shipping label. Please try again.');
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function showRateSelection(orderId, allRates) {
+            const modal = document.getElementById('shippingModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            const modalEdit = document.getElementById('modalEdit');
+            
+            modalTitle.textContent = 'Select Carrier & Rate';
+            modalEdit.style.display = 'none';
+            
+            if (!allRates) {
+                // Rates weren't passed, need to fetch them
+                modalBody.innerHTML = '<div class="loading-spinner"></div>';
+                
+                try {
+                    const response = await authedFetch('/admin/get-rates', {
+                        method: 'POST',
+                        body: { order_id: orderId }
+                    });
+
+                    if (!response.ok || !response.body.rates) {
+                        const msg = response.body && (response.body.error || response.body.raw) || 'Failed to fetch rates.';
+                        modalBody.innerHTML = `<p class="err">${escapeHtml(msg)}</p>`;
+                        return;
+                    }
+
+                    allRates = response.body.rates;
+                } catch (err) {
+                    console.error('Error fetching rates:', err);
+                    modalBody.innerHTML = '<p class="err">Failed to load rates. Please try again.</p>';
+                    return;
+                }
+            }
+            
+            if (allRates.length === 0) {
+                modalBody.innerHTML = '<p class="muted">No rates available for this shipment.</p>';
+                return;
+            }
+
+            // Group and sort rates by carrier
+            const ratesByCarrier = {};
+            allRates.forEach(rate => {
+                const carrier = rate.carrier || 'Unknown';
+                if (!ratesByCarrier[carrier]) {
+                    ratesByCarrier[carrier] = [];
+                }
+                ratesByCarrier[carrier].push(rate);
+            });
+
+            Object.keys(ratesByCarrier).forEach(carrier => {
+                ratesByCarrier[carrier].sort((a, b) => parseFloat(a.rate) - parseFloat(b.rate));
+            });
+
+            let ratesHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            
+            Object.keys(ratesByCarrier).sort().forEach(carrier => {
+                ratesHtml += `<h3 style="margin-top: 1rem; color: var(--brand);">${carrier}</h3>`;
+                
+                ratesByCarrier[carrier].forEach((rate, idx) => {
+                    const rateId = `rate_${carrier.replace(/\s+/g, '_')}_${idx}`;
+                    const deliveryInfo = rate.delivery_days ? `${rate.delivery_days} days` : 'N/A';
+                    
+                    ratesHtml += `
+                        <div class="rate-option" onclick="selectRate('${rateId}')">
+                            <label style="cursor: pointer; display: flex; align-items: center; margin: 0;">
+                                <input type="radio" name="selectedRate" id="${rateId}" 
+                                    data-rate-id="${rate.rate_id || ''}"
+                                    value="${rate.rate}" style="margin-right: 0.5rem;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: var(--text);">${rate.service}</div>
+                                    <div style="font-size: 0.875rem; color: var(--muted);">
+                                        $${parseFloat(rate.rate).toFixed(2)} &middot; ${deliveryInfo}
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    `;
+                });
+            });
+            
+            ratesHtml += '</div>';
+            modalBody.innerHTML = ratesHtml;
+            
+            document.getElementById('modalCancel').onclick = () => {
+                modal.classList.remove('active');
+                // Reset modal state
+                modalTitle.textContent = 'Confirm Shipping Label';
+                modalEdit.style.display = 'inline-block';
+            };
+            
+            document.getElementById('modalOk').onclick = () => {
+                const selected = document.querySelector('input[name="selectedRate"]:checked');
+                if (!selected) {
+                    showOrderError('Please select a rate');
+                    return;
+                }
+                
+                const rateId = selected.dataset.rateId;
+                
+                modal.classList.remove('active');
+                modalTitle.textContent = 'Confirm Shipping Label';
+                modalEdit.style.display = 'inline-block';
+                
+                proceedWithSelectedRate(orderId, null, rateId);
+            };
+        }
+
+        async function proceedWithSelectedRate(orderId, shipmentId, rateId) {
+            const btn = document.querySelector(`[data-order-id="${orderId}"] .fulfill-btn[onclick*="createShippingLabel"]`);
+            if (!btn) return;
+            
+            const originalText = btn.textContent;
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Creating...';
+                
+                const response = await authedFetch('/admin/create-label', {
+                    method: 'POST',
+                    body: { 
+                        order_id: orderId,
+                        rate_id: rateId
+                    }
+                });
+
+                if (response.ok && response.body.success) {
+                    showOrderSuccess(`Label created! Tracking: ${response.body.tracking_number || 'N/A'}`);
+                    
+                    allOrders = allOrders.map(o => {
+                        if (o.order_id === orderId) {
+                            return {
+                                ...o,
+                                tracking_number: response.body.tracking_number,
+                                tracking_url: response.body.tracking_url,
+                                fulfilled: true
+                            };
+                        }
+                        return o;
+                    });
+                    filterOrders();
+                } else {
+                    showOrderError(`Failed to create label: ${response.body.error || 'Unknown error'}`);
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
+            } catch (err) {
+                console.error('Create label error:', err);
+                showOrderError('Failed to create shipping label. Please try again.');
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        function selectRate(rateId) {
+            document.querySelectorAll('.rate-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            const radio = document.getElementById(rateId);
+            radio.checked = true;
+            radio.closest('.rate-option').classList.add('selected');
+        }
+
+        // Add this to your global functions
+        window.selectRate = selectRate;
+
+        function updateOrdersStats() {
+            const pending = allOrders.filter(o => 
+                (o.payment_status || '').toLowerCase() === 'succeeded' && 
+                !(o.fulfilled === true || o.fulfilled === 'true')
+            );
+            const total = pending.reduce((sum, o) => sum + (o.amount || 0), 0);
+            const avg = pending.length ? total / pending.length : 0;
+
+            const displayCount = totalUnfulfilledCount > 0 ? totalUnfulfilledCount : pending.length;
+            
+            document.getElementById('total-orders').textContent = displayCount;
+            document.getElementById('total-revenue').textContent = formatCurrency(total, 'usd');
+            document.getElementById('avg-order').textContent = formatCurrency(avg, 'usd');
+        }
+
+        function updateLoadMoreButton() {
+            const container = document.getElementById('load-more-container');
+            const btn = document.getElementById('load-more-btn');
+            if (ordersHasMore && !ordersIsLoading) { 
+                container.style.display = 'block'; 
+                btn.disabled = false; 
+                btn.textContent = 'Load More Orders'; 
+            } else if (ordersIsLoading) { 
+                container.style.display = 'block'; 
+                btn.disabled = true; 
+            } else { 
+                container.style.display = 'none'; 
+            }
+        }
+
+        function clearOrderFilters() {
+            document.getElementById('search-customer').value = '';
+            document.getElementById('search-product').value = '';
+            document.getElementById('toggle-fulfilled').checked = false;
+            filterOrders();
+        }
+
+        function refreshOrders() {
+            allOrders = [];
+            filteredOrders = [];
+            ordersNextKey = null;
+            ordersHasMore = true;
+            document.getElementById('orders-list').innerHTML = '<div class="loading-spinner"></div>';
+            if (currentClientID) {
+                loadOrdersForClient();
+            }
+        }
+
+        function formatCurrency(amount, currency = 'usd') {
+            const formatter = new Intl.NumberFormat('en-US', { 
+                style: 'currency', 
+                currency: (currency || 'usd').toUpperCase() 
+            });
+            return formatter.format((amount || 0) / 100);
+        }
+
+        function showOrdersLoading() {
+            if (allOrders.length === 0) {
+                document.getElementById('orders-list').innerHTML = '<div class="loading-spinner"></div>';
+            }
+        }
+
+        function showOrderError(message) {
+            const container = document.getElementById('order-error-container');
+            container.innerHTML = `<div class="message error">${escapeHtml(message)}</div>`;
+            setTimeout(() => container.innerHTML = '', 4000);
+        }
+
+        function showOrderSuccess(message) {
+            const container = document.getElementById('order-success-container');
+            container.innerHTML = `<div class="message success">${escapeHtml(message)}</div>`;
+            setTimeout(() => container.innerHTML = '', 3000);
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"'`=\/]/g, function (s) {
+                return {
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+                    "'": '&#39;', '/': '&#x2F;', '`': '&#x60;', '=': '&#x3D;'
+                }[s];
+            });
+        }
+
+        // ======== SHIPPING CONFIGURATION ========
+        
+        document.getElementById('shippingProvider').addEventListener('change', function() {
+            const provider = this.value;
+            const apiKeySection = document.getElementById('shippingApiKeySection');
+            const secretSection = document.getElementById('shipstationSecretSection');
+            
+            if (provider) {
+                apiKeySection.classList.remove('hidden');
+                if (provider === 'shipstation') {
+                    secretSection.classList.remove('hidden');
+                } else {
+                    secretSection.classList.add('hidden');
+                }
+            } else {
+                apiKeySection.classList.add('hidden');
+                secretSection.classList.add('hidden');
+            }
+        });
+
+        async function loadShippingConfig(clientID) {
+            try {
+                const res = await authedFetch(`/admin/shipping-config?clientID=${encodeURIComponent(clientID)}`);
+                
+                if (res.ok && res.body) {
+                    const config = res.body;
+                    
+                    document.getElementById('shippingProvider').value = config.shipping_provider || '';
+                    document.getElementById('shippingProvider').dispatchEvent(new Event('change'));
+                    
+                    if (config.shipping_config) {
+                        const sc = config.shipping_config;
+                        
+                        if (sc.api_key) {
+                            const masked = typeof sc.api_key === 'object' ? sc.api_key.masked : sc.api_key;
+                            document.getElementById('shippingApiKey').value = masked || '';
+                        }
+                        if (sc.api_secret) {
+                            const masked = typeof sc.api_secret === 'object' ? sc.api_secret.masked : sc.api_secret;
+                            document.getElementById('shippingApiSecret').value = masked || '';
+                        }
+                        
+                        document.getElementById('shippingTestMode').checked = sc.test_mode !== false;
+                        document.getElementById('autoFulfill').checked = sc.auto_fulfill === true;
+                        
+                        const from = sc.default_from_address || {};
+                        document.getElementById('shipFromName').value = from.name || '';
+                        document.getElementById('shipFromStreet1').value = from.street1 || '';
+                        document.getElementById('shipFromStreet2').value = from.street2 || '';
+                        document.getElementById('shipFromCity').value = from.city || '';
+                        document.getElementById('shipFromState').value = from.state || '';
+                        document.getElementById('shipFromZip').value = from.zip || '';
+                        document.getElementById('shipFromCountry').value = from.country || 'US';
+                        document.getElementById('shipFromPhone').value = from.phone || '';
+                        
+                        const parcel = sc.default_parcel || {};
+                        document.getElementById('parcelLength').value = parcel.length || 10;
+                        document.getElementById('parcelWidth').value = parcel.width || 8;
+                        document.getElementById('parcelHeight').value = parcel.height || 4;
+                        document.getElementById('parcelWeight').value = parcel.weight || 1;
+                    }
+                    
+                    setMsg('shippingMsg', 'Shipping configuration loaded', 'success');
+                } else {
+                    setMsg('shippingMsg', 'No shipping configuration found', 'info');
+                }
+            } catch (error) {
+                console.error('Error loading shipping config:', error);
+                setMsg('shippingMsg', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        document.getElementById('btnSaveShipping').onclick = async () => {
+            try {
+                const clientID = document.getElementById('clientID').value.trim();
+                if (!clientID) return setMsg('shippingMsg', 'Enter clientID', 'error');
+                
+                const provider = document.getElementById('shippingProvider').value;
+                
+                const payload = {
+                    clientID: clientID,
+                    shipping_provider: provider || null,
+                    shipping_config: provider ? {
+                        api_key: document.getElementById('shippingApiKey').value.trim(),
+                        api_secret: document.getElementById('shippingApiSecret').value.trim() || null,
+                        test_mode: document.getElementById('shippingTestMode').checked,
+                        auto_fulfill: document.getElementById('autoFulfill').checked,
+                        default_from_address: {
+                            name: document.getElementById('shipFromName').value.trim(),
+                            street1: document.getElementById('shipFromStreet1').value.trim(),
+                            street2: document.getElementById('shipFromStreet2').value.trim(),
+                            city: document.getElementById('shipFromCity').value.trim(),
+                            state: document.getElementById('shipFromState').value.trim(),
+                            zip: document.getElementById('shipFromZip').value.trim(),
+                            country: document.getElementById('shipFromCountry').value.trim() || 'US',
+                            phone: document.getElementById('shipFromPhone').value.trim()
+                        },
+                        default_parcel: {
+                            length: parseFloat(document.getElementById('parcelLength').value) || 10,
+                            width: parseFloat(document.getElementById('parcelWidth').value) || 8,
+                            height: parseFloat(document.getElementById('parcelHeight').value) || 4,
+                            weight: parseFloat(document.getElementById('parcelWeight').value) || 1
+                        }
+                    } : null
+                };
+                
+                const res = await authedFetch(`/admin/shipping-config`, { 
+                    method: 'PUT', 
+                    body: payload 
+                });
+                
+                if (!res.ok) {
+                    return setMsg('shippingMsg', `Save failed: ${JSON.stringify(res.body)}`, 'error');
+                }
+                
+                setMsg('shippingMsg', 'Shipping configuration saved successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Save shipping error:', error);
+                setMsg('shippingMsg', `Error: ${error.message}`, 'error');
+            }
+        };
+
+        document.getElementById('btnTestShipping').onclick = async () => {
+            try {
+                const clientID = document.getElementById('clientID').value.trim();
+                const provider = document.getElementById('shippingProvider').value;
+                
+                if (!clientID) return setMsg('shippingMsg', 'Enter clientID', 'error');
+                if (!provider) return setMsg('shippingMsg', 'Select a provider first', 'error');
+                
+                setMsg('shippingMsg', 'Testing connection...', 'info');
+                
+                const res = await authedFetch(`/admin/test-shipping`, {
+                    method: 'POST',
+                    body: { clientID: clientID }
+                });
+                
+                if (res.ok && res.body.success) {
+                    setMsg('shippingMsg', `Connection successful! Provider: ${res.body.provider}`, 'success');
+                } else {
+                    setMsg('shippingMsg', `Test failed: ${res.body.error || 'Unknown error'}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Test shipping error:', error);
+                setMsg('shippingMsg', `Error: ${error.message}`, 'error');
+            }
+        };
+
+        // Setup order filters event listeners
+        function setupOrderEventListeners() {
+            document.getElementById('search-customer').addEventListener('input', filterOrders);
+            document.getElementById('search-product').addEventListener('input', filterOrders);
+            document.getElementById('toggle-fulfilled').addEventListener('change', filterOrders);
+            
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            if (loadMoreBtn) {
+                loadMoreBtn.disabled = false;
+                loadMoreBtn.removeAttribute('disabled');
+                loadMoreBtn.addEventListener('click', function(e) {
+                    loadMoreBtn.disabled = false;
+                    loadMoreOrders();
+                });
+            }
+        }
+
+        async function loadUserClientData() {
+            // This function will be deleted or moved to another page
+            try {
+                const session = await getSession();
+                const idToken = session.getIdToken();
+                const cognitoClientID = idToken.payload.sub;
+
+                console.log('cognitoClientID:', cognitoClientID);
+                
+                const expectedClientID = cognitoClientID;
+                const clientIDToUse = expectedClientID;
+                
+                currentClientID = clientIDToUse;
+                document.getElementById('clientID').value = clientIDToUse;
+                
+                await loadStripeKeys(clientIDToUse);
+                await loadOffers(clientIDToUse);
+                await loadShippingConfig(clientIDToUse);
+                await loadTenantConfig(clientIDToUse);
+                
+                resetOrdersData();
+                
+            } catch (error) {
+                console.error('Error loading user client data:', error);
+                setMsg('apiMsg', 'Failed to load client data', 'error');
+            }
+        }
+
+        function resetOrdersData() {
+            allOrders = [];
+            filteredOrders = [];
+            ordersNextKey = null;
+            ordersHasMore = true;
+            ordersIsLoading = false;
+        }
+
+        async function loadStripeKeys(clientID) {
+            try {
+                const res = await authedFetch(`/admin/stripe-keys?clientID=${encodeURIComponent(clientID)}`);
+                
+                if (res.ok) {
+                    const v = typeof res.body === 'string' ? {} : (res.body || {});
+                    document.getElementById('mode').value = v.mode || 'test';
+                    
+                    function extractValue(fieldData) {
+                        if (!fieldData) return '';
+                        if (typeof fieldData === 'string') return fieldData;
+                        if (typeof fieldData === 'object') {
+                            if (fieldData.error) return '';
+                            if (fieldData.masked) return fieldData.masked;
+                            if (fieldData.encrypted) return '';
+                        }
+                        return '';
+                    }
+                    
+                    const fieldMap = {
+                        'pk_test': v.pk_test,
+                        'sk_test': v.sk_test, 
+                        'wh_test': v.wh_secret_test || v.whsec_test,
+                        'pk_live': v.pk_live,
+                        'sk_live': v.sk_live,
+                        'wh_live': v.wh_secret_live || v.whsec_live
+                    };
+                    
+                    Object.keys(fieldMap).forEach(formFieldId => {
+                        const fieldData = fieldMap[formFieldId];
+                        const value = extractValue(fieldData);
+                        const element = document.getElementById(formFieldId);
+                        if (element) {
+                            element.value = value;
+                            if (fieldData && typeof fieldData === 'object' && fieldData.error) {
+                                element.style.borderColor = 'var(--danger)';
+                                element.title = `Error: ${fieldData.error}`;
+                            } else if (fieldData && typeof fieldData === 'object' && fieldData.encrypted && !fieldData.masked) {
+                                element.style.borderColor = 'var(--muted)';
+                                element.title = 'Encrypted value - re-enter to update';
+                            } else {
+                                element.style.borderColor = '';
+                                element.title = '';
+                            }
+                        }
+                    });
+                    
+                    setMsg('apiMsg', 'Stripe keys loaded automatically', 'success');
+                } else {
+                    setMsg('apiMsg', 'No stripe keys found for this client', 'info');
+                }
+            } catch (error) {
+                console.error('Error loading stripe keys:', error);
+                setMsg('apiMsg', `Error loading keys: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadOffers(clientID) {
+            try {
+                const res = await authedFetch(`/`, { 
+                    method: 'POST', 
+                    body: { 
+                        action: "get_client_offers",
+                        clientID: clientID
+                    } 
+                });
+                
+                if (res.ok) {
+                    currentOfferData = typeof res.body === 'string' ? {} : (res.body || {});
+                    document.getElementById('baseFrontendUrl').value = currentOfferData.base_url || '';
+                    document.getElementById('offersContainer').innerHTML = '';
+                    
+                    const offers = currentOfferData.offers || {};
+                    Object.keys(offers).forEach(key => {
+                        addOffer(key, offers[key]);
+                    });
+                    
+                    setMsg('offersMsg', `Loaded ${Object.keys(offers).length} offer(s) successfully`, 'success');
+                } else {
+                    setMsg('offersMsg', `Failed to load offers: ${res.body?.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error loading offers:', error);
+                setMsg('offersMsg', `Error loading offers: ${error.message}`, 'error');
+            }
+        }
+
+        // ======== Auth Handlers ========
+        document.getElementById('btnRegister').onclick = () => {
+            const email = document.getElementById('regEmail').value.trim();
+            const pass = document.getElementById('regPass').value;
+            if (!email || !pass) return setMsg('regMsg', 'Email and password required', 'error');
+
+            const attrs = [new Cognito.CognitoUserAttribute({ Name: 'email', Value: email })];
+            pool.signUp(email, pass, attrs, [], (err, data) => {
+                if (err) return setMsg('regMsg', err.message || String(err), 'error');
+                setMsg('regMsg', 'Sign-up successful. Please check your email for the code.', 'success');
+                document.getElementById('confEmail').value = email;
+            });
+        };
+
+        document.getElementById('btnConfirm').onclick = () => {
+            const email = document.getElementById('confEmail').value.trim();
+            const code = document.getElementById('confCode').value.trim();
+            if (!email || !code) return setMsg('regMsg', 'Email and code required', 'error');
+
+            const user = new Cognito.CognitoUser({ Username: email, Pool: pool });
+            user.confirmRegistration(code, true, (err, res) => {
+                if (err) return setMsg('regMsg', err.message || String(err), 'error');
+                setMsg('regMsg', 'Email confirmed. You can sign in now.', 'success');
+            });
+        };
+
+        document.getElementById('btnResend').onclick = () => {
+            const email = document.getElementById('confEmail').value.trim();
+            if (!email) return setMsg('regMsg', 'Email required to resend', 'error');
+            const user = new Cognito.CognitoUser({ Username: email, Pool: pool });
+            user.resendConfirmationCode((err) => {
+                if (err) return setMsg('regMsg', err.message || String(err), 'error');
+                setMsg('regMsg', 'Verification code resent.', 'success');
+            });
+        };
+
+        document.getElementById('btnLogin').onclick = () => {
+            const email = document.getElementById('loginEmail').value.trim();
+            const pass = document.getElementById('loginPass').value;
+            if (!email || !pass) return setMsg('loginMsg', 'Email and password required', 'error');
+
+            const auth = new Cognito.AuthenticationDetails({ Username: email, Password: pass });
+            const user = new Cognito.CognitoUser({ Username: email, Pool: pool });
+            
+            const btnLogin = document.getElementById('btnLogin');
+            btnLogin.disabled = true;
+            btnLogin.textContent = 'Signing in...';
+            
+            user.authenticateUser(auth, {
+                onSuccess: (result) => {
+                    setMsg('loginMsg', 'Successfully signed in!', 'success');
+                    setTimeout(() => {
+                        const cu = currentUser();
+                        const username = cu ? cu.getUsername() : 'Unknown';
+                        document.getElementById('who').textContent = username;
+                        showMainApp();
+                        loadUserClientData();
+                        setupOrderEventListeners();
+                    }, 1000);
+                },
+                onFailure: (err) => {
+                    setMsg('loginMsg', err.message || String(err), 'error');
+                    btnLogin.disabled = false;
+                    btnLogin.textContent = 'Sign In';
+                }
+            });
+        };
+
+        document.getElementById('btnForgot').onclick = () => {
+            const email = document.getElementById('fpEmail').value.trim();
+            if (!email) return setMsg('fpMsg', 'Enter your email', 'error');
+            
+            const user = new Cognito.CognitoUser({ Username: email, Pool: pool });
+            user.forgotPassword({
+                onSuccess: () => {
+                    setMsg('fpMsg', 'Reset code sent to your email.', 'success');
+                    document.getElementById('fpConfEmail').value = email;
+                },
+                onFailure: (err) => setMsg('fpMsg', err.message || String(err), 'error')
+            });
+        };
+
+        document.getElementById('btnConfirmNew').onclick = () => {
+            const email = document.getElementById('fpConfEmail').value.trim();
+            const code = document.getElementById('fpCode').value.trim();
+            const pass = document.getElementById('fpNewPass').value;
+            if (!email || !code || !pass) return setMsg('fpMsg', 'All fields required', 'error');
+            
+            const user = new Cognito.CognitoUser({ Username: email, Pool: pool });
+            user.confirmPassword(code, pass, {
+                onSuccess: () => {
+                    setMsg('fpMsg', 'Password updated! You can now sign in.', 'success');
+                    setTimeout(() => {
+                        switchAuthTab('login');
+                        document.getElementById('loginEmail').value = email;
+                    }, 1500);
+                },
+                onFailure: (err) => setMsg('fpMsg', err.message || String(err), 'error')
+            });
+        };
+
+        document.getElementById('btnSignOut').onclick = () => {
+            const cu = currentUser();
+            if (cu) cu.signOut();
+            resetOrdersData();
+            currentClientID = null;
+            showLogin();
+        };
+
+        // ======== CONFIG MANAGEMENT ========
+        
+        const DEFAULT_MESSAGES = {
+            just_for_you: "This exclusive offer is just for you! Take advantage of this special deal today.",
+            order_fulfilled: "Great news! Your order has been shipped.\n\nTracking Number: {tracking_number}\nTrack your package: {tracking_url}\n\nThank you for your order!",
+            refund: "Your refund has been processed successfully. Please allow 5-10 business days for the funds to appear in your account.\n\nIf you have any questions, please don't hesitate to contact us.",
+            return_label: "A return label has been created for your order.\n\nReturn Tracking: {tracking_number}\nDownload Label: {label_url}\n\nPlease print the label and attach it to your package.",
+            thank_you: "Thank you for your order! We truly appreciate your business.\n\nYour order is being processed and you'll receive a shipping confirmation soon."
+        };
+
+        async function loadTenantConfig(clientID) {
+            try {
+                const res = await authedFetch(`/admin/tenant-config?clientID=${encodeURIComponent(clientID)}`);
+                
+                if (res.ok && res.body) {
+                    const config = res.body.tenant_config || {};
+                    
+                    document.getElementById('msgJustForYou').value = config.just_for_you || '';
+                    document.getElementById('msgOrderFulfilled').value = config.order_fulfilled || '';
+                    document.getElementById('msgRefund').value = config.refund || '';
+                    document.getElementById('msgReturnLabel').value = config.return_label || '';
+                    document.getElementById('msgThankYou').value = config.thank_you || '';
+                    
+                    setMsg('configMsg', 'Configuration loaded', 'success');
+                } else {
+                    loadAllDefaults();
+                    setMsg('configMsg', 'No saved configuration - defaults loaded', 'info');
+                }
+            } catch (error) {
+                console.error('Error loading tenant config:', error);
+                setMsg('configMsg', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function saveTenantConfig(clientID) {
+            try {
+                const config = {
+                    clientID: clientID,
+                    tenant_config: {
+                        just_for_you: document.getElementById('msgJustForYou').value.trim(),
+                        order_fulfilled: document.getElementById('msgOrderFulfilled').value.trim(),
+                        refund: document.getElementById('msgRefund').value.trim(),
+                        return_label: document.getElementById('msgReturnLabel').value.trim(),
+                        thank_you: document.getElementById('msgThankYou').value.trim()
+                    }
+                };
+                
+                const res = await authedFetch('/admin/tenant-config', {
+                    method: 'PUT',
+                    body: config
+                });
+                
+                if (res.ok) {
+                    setMsg('configMsg', 'Configuration saved successfully!', 'success');
+                } else {
+                    setMsg('configMsg', `Save failed: ${res.body.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error saving tenant config:', error);
+                setMsg('configMsg', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        function loadDefaultMessage(messageType) {
+            const fieldMap = {
+                'just_for_you': 'msgJustForYou',
+                'order_fulfilled': 'msgOrderFulfilled',
+                'refund': 'msgRefund',
+                'return_label': 'msgReturnLabel',
+                'thank_you': 'msgThankYou'
+            };
+            
+            const fieldId = fieldMap[messageType];
+            if (fieldId) {
+                document.getElementById(fieldId).value = DEFAULT_MESSAGES[messageType];
+            }
+        }
+
+        function loadAllDefaults() {
+            document.getElementById('msgJustForYou').value = DEFAULT_MESSAGES.just_for_you;
+            document.getElementById('msgOrderFulfilled').value = DEFAULT_MESSAGES.order_fulfilled;
+            document.getElementById('msgRefund').value = DEFAULT_MESSAGES.refund;
+            document.getElementById('msgReturnLabel').value = DEFAULT_MESSAGES.return_label;
+            document.getElementById('msgThankYou').value = DEFAULT_MESSAGES.thank_you;
+        }
+
+        // Config button handlers
+        document.getElementById('btnDefaultJustForYou').onclick = () => loadDefaultMessage('just_for_you');
+        document.getElementById('btnSaveJustForYou').onclick = async () => {
+            if (!currentClientID) return setMsg('configMsg', 'No client ID available', 'error');
+            await saveTenantConfig(currentClientID);
+        };
+
+        document.getElementById('btnDefaultOrderFulfilled').onclick = () => loadDefaultMessage('order_fulfilled');
+        document.getElementById('btnSaveOrderFulfilled').onclick = async () => {
+            if (!currentClientID) return setMsg('configMsg', 'No client ID available', 'error');
+            await saveTenantConfig(currentClientID);
+        };
+
+        document.getElementById('btnDefaultRefund').onclick = () => loadDefaultMessage('refund');
+        document.getElementById('btnSaveRefund').onclick = async () => {
+            if (!currentClientID) return setMsg('configMsg', 'No client ID available', 'error');
+            await saveTenantConfig(currentClientID);
+        };
+
+        document.getElementById('btnDefaultReturnLabel').onclick = () => loadDefaultMessage('return_label');
+        document.getElementById('btnSaveReturnLabel').onclick = async () => {
+            if (!currentClientID) return setMsg('configMsg', 'No client ID available', 'error');
+            await saveTenantConfig(currentClientID);
+        };
+
+        document.getElementById('btnDefaultThankYou').onclick = () => loadDefaultMessage('thank_you');
+        document.getElementById('btnSaveThankYou').onclick = async () => {
+            if (!currentClientID) return setMsg('configMsg', 'No client ID available', 'error');
+            await saveTenantConfig(currentClientID);
+        };
+
+        document.getElementById('btnSaveAllConfig').onclick = async () => {
+            if (!currentClientID) return setMsg('configMsg', 'No client ID available', 'error');
+            await saveTenantConfig(currentClientID);
+        };
+
+        document.getElementById('btnLoadDefaultsAll').onclick = () => {
+            loadAllDefaults();
+            setMsg('configMsg', 'All defaults loaded (not saved yet)', 'info');
+        };
+
+        // ======== END CONFIG MANAGEMENT ========
+
+        // ======== Stripe Keys handlers ========
+        document.getElementById('btnGet').onclick = async () => {
+            try {
+                const id = document.getElementById('clientID').value.trim();
+                if (!id) return setMsg('apiMsg', 'Enter clientID', 'error');
+                await loadStripeKeys(id);
+            } catch (error) {
+                console.error('btnGet error:', error);
+                setMsg('apiMsg', `Error: ${error.message}`, 'error');
+            }
+        };
+
+        document.getElementById('btnSave').onclick = async () => {
+            try {
+                const id = document.getElementById('clientID').value.trim();
+                if (!id) return setMsg('apiMsg', 'Enter clientID', 'error');
+                
+                const payload = {
+                    clientID: id,
+                    mode: document.getElementById('mode').value,
+                    pk_test: document.getElementById('pk_test').value,
+                    pk_live: document.getElementById('pk_live').value,
+                    sk_test: document.getElementById('sk_test').value,
+                    sk_live: document.getElementById('sk_live').value,
+                    wh_secret_test: document.getElementById('wh_test').value,
+                    wh_secret_live: document.getElementById('wh_live').value,
+                };
+                
+                const res = await authedFetch(`/admin/stripe-keys`, { method: 'PUT', body: payload });
+                
+                if (!res.ok) {
+                    return setMsg('apiMsg', `SAVE failed (${res.status}): ${JSON.stringify(res.body)}`, 'error');
+                }
+                
+                setMsg('apiMsg', 'Saved.', 'success');
+                loadUserClientData();
+            } catch (error) {
+                console.error('btnSave error:', error);
+                setMsg('apiMsg', `Error: ${error.message}`, 'error');
+            }
+        };
+
+        document.getElementById('btnVerify').onclick = async () => {
+            try {
+                const id = document.getElementById('clientID').value.trim();
+                const mode = document.getElementById('mode').value;
+                
+                if (!id) return setMsg('verifyMsg', 'Enter clientID', 'error');
+                
+                const payload = { clientID: id, mode: mode };
+                const res = await authedFetch(`/admin/verify`, { method: 'POST', body: payload });
+                
+                if (res.ok) {
+                    const result = res.body;
+                    let msg = `Verification complete:\n`;
+                    msg += `• Publishable key: ${result.publishable_key_ok ? '✓' : '✗'}\n`;
+                    msg += `• Secret key: ${result.secret_key_ok ? '✓' : '✗'}\n`;
+                    msg += `• Webhook secret: ${result.webhook_secret_ok ? '✓' : '✗'}\n`;
+                    
+                    if (result.stripe_account) {
+                        msg += `• Stripe account: ${result.stripe_account}\n`;
+                    }
+                    
+                    if (result.notes && result.notes.length > 0) {
+                        msg += `\nNotes:\n${result.notes.join('\n')}`;
+                    }
+                    
+                    document.getElementById('verifyMsg').textContent = msg;
+                    document.getElementById('verifyMsg').className = 'muted';
+                } else {
+                    const errorMsg = `Verification failed (${res.status}): ${JSON.stringify(res.body)}`;
+                    document.getElementById('verifyMsg').textContent = errorMsg;
+                    document.getElementById('verifyMsg').className = 'message error';
+                }
+                
+            } catch (error) {
+                console.error('btnVerify error:', error);
+                document.getElementById('verifyMsg').textContent = `Error: ${error.message}`;
+                document.getElementById('verifyMsg').className = 'message error';
+            }
+        };
+
+        // ======== Offers Management ========
+        function createOfferElement(key, offer) {
+            const div = document.createElement('div');
+            div.className = 'offer-item';
+            div.dataset.offerKey = key;
+            
+            div.innerHTML = `
+                <div class="offer-header">
+                    <div class="offer-key">${key}</div>
+                    <button class="small danger" onclick="removeOffer('${key}')">Remove</button>
+                </div>
+                <label>Path</label>
+                <input class="offer-path mono" value="${offer.path || ''}" />
+                <label>Product IDs (comma-separated)</label>
+                <input class="offer-products mono" value="${(offer.product_ids || []).join(', ')}" />
+                <div class="row mt8">
+                    <label style="margin:0">Active</label>
+                    <input type="checkbox" class="offer-active" ${offer.active ? 'checked' : ''} style="width:auto" />
+                </div>
+            `;
+            
+            return div;
+        }
+
+        function addOffer(key = '', offer = {}) {
+            const container = document.getElementById('offersContainer');
+            const offerElement = createOfferElement(key, offer);
+            container.appendChild(offerElement);
+            
+            if (!key) {
+                const keySpan = offerElement.querySelector('.offer-key');
+                keySpan.contentEditable = true;
+                keySpan.focus();
+            }
+        }
+
+        function removeOffer(key) {
+            const element = document.querySelector(`[data-offer-key="${key}"]`);
+            if (element) element.remove();
+        }
+
+        document.getElementById('btnAddOffer').onclick = () => {
+            const key = prompt('Enter offer key:');
+            if (key) {
+                addOffer(key, { path: '', product_ids: [], active: true });
+            }
+        };
+
+        document.getElementById('btnGetOffers').onclick = async () => {
+            try {
+                const id = document.getElementById('clientID').value.trim();
+                if (!id) return setMsg('offersMsg', 'Enter clientID', 'error');
+                await loadOffers(id);
+            } catch (error) {
+                console.error('btnGetOffers error:', error);
+                setMsg('offersMsg', `Error: ${error.message}`, 'error');
+            }
+        };
+
+        document.getElementById('btnSaveOffers').onclick = async () => {
+            try {
+                const clientID = document.getElementById('clientID').value.trim();
+                const baseFrontendUrl = document.getElementById('baseFrontendUrl').value.trim();
+                
+                if (!clientID) {
+                    return setMsg('offersMsg', 'Client ID is required', 'error');
+                }
+                
+                const offerElements = document.querySelectorAll('.offer-item');
+                if (offerElements.length === 0) {
+                    return setMsg('offersMsg', 'No offers to save', 'error');
+                }
+                
+                let savedCount = 0;
+                
+                for (const element of offerElements) {
+                    let offerName = element.querySelector('.offer-key').textContent.trim();
+                    const path = element.querySelector('.offer-path').value.trim();
+                    const productsStr = element.querySelector('.offer-products').value.trim();
+                    const active = element.querySelector('.offer-active').checked;
+                    
+                    if (!offerName) continue;
+                    
+                    const offerPayload = {
+                        action: "update_offer",
+                        offer_name: offerName,
+                        path: path || offerName,
+                        product_ids: productsStr ? productsStr.split(',').map(id => id.trim()) : [],
+                        active: active,
+                        clientID: clientID
+                    };
+                    
+                    if (baseFrontendUrl) {
+                        offerPayload.base_frontend_url = baseFrontendUrl;
+                    }
+                    
+                    try {
+                        const res = await authedFetch(`/`, { method: 'POST', body: offerPayload });
+                        
+                        if (!res.ok) {
+                            const errorMsg = res.body && res.body.error 
+                                ? res.body.error 
+                                : `HTTP ${res.status}: ${JSON.stringify(res.body)}`;
+                            
+                            setMsg('offersMsg', `Failed to save offer "${offerName}": ${errorMsg}`, 'error');
+                            return;
+                        }
+                        
+                        savedCount++;
+                        
+                    } catch (fetchError) {
+                        setMsg('offersMsg', `Network error saving "${offerName}": ${fetchError.message}`, 'error');
+                        return;
+                    }
+                }
+                
+                setMsg('offersMsg', `Successfully saved ${savedCount} offer(s) and base URL.`, 'success');
+                setTimeout(() => { loadUserClientData(); }, 1000);
+                
+            } catch (error) {
+                setMsg('offersMsg', `Error: ${error.message}`, 'error');
+            }
+        };
+
+        // Make functions globally accessible
+        window.removeOffer = removeOffer;
+        window.fulfillOrder = fulfillOrder;
+        window.createShippingLabel = createShippingLabel;
+        window.clearOrderFilters = clearOrderFilters;
+        window.refreshOrders = refreshOrders;
+        window.loadMoreOrders = loadMoreOrders;
+
+        // ======== Initialize App ========
+        function afterAuth() {
+            getSession()
+                .then(() => {
+                    const cu = currentUser();
+                    const username = cu ? cu.getUsername() : 'Unknown';
+                    document.getElementById('who').textContent = username;
+                    showMainApp();
+                    loadUserClientData();
+                    setupOrderEventListeners();
+                })
+                .catch(() => {
+                    showLogin();
+                });
+        }
+
+        afterAuth();
+    </script>
+    <!-- Shipping Rate Selection Modal -->
+    <div id="shippingModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header" id="modalTitle">Confirm Shipping Label</div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content will be dynamically inserted -->
+            </div>
+            <div class="modal-actions">
+                <button id="modalCancel" class="secondary">Cancel</button>
+                <button id="modalEdit" class="secondary">Change Carrier/Rate</button>
+                <button id="modalOk">Create Label</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

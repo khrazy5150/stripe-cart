@@ -1,0 +1,571 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  stripe-cart-stack
+
+  Stripe payment processing Lambda with DynamoDB order tracking,
+  multi-tenant stripe_keys lookup, per-tenant webhook routing,
+  shipping provider integration, and a protected admin API 
+  backed by Cognito User Pool auth.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    Description: Environment name (used as API stage and table suffix)
+
+  StripeKmsKeyArn:
+    Type: String
+    Default: arn:aws:kms:us-west-2:150544707159:key/58959a2e-9a28-430e-9aae-12705d68ca1e  # replace with actual KMS ARN
+    Description: CMK ARN used to (de)crypt tenant Stripe secret keys and shipping API keys
+
+  AdminUserPoolName:
+    Type: String
+    Default: juniorbay-tenants
+    Description: Cognito User Pool name for tenant admins
+
+  AdminAppClientName:
+    Type: String
+    Default: juniorbay-admin-web
+    Description: Cognito App Client name for tenant admins
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: python3.9
+
+Resources:
+  ############################################################
+  # API (SAM) with Cognito Authorizer (defined here)
+  ############################################################
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "stripe-cart-stack-${Environment}"
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'POST, OPTIONS, GET, PUT, DELETE'"
+        AllowHeaders: "'Content-Type, Authorization, stripe-signature, X-Client-Id, X-Amz-Date, X-Api-Key, X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+        MaxAge: "'600'"
+      Auth:
+        Authorizers:
+          AdminCognitoAuthorizer:
+            UserPoolArn: !GetAtt AdminUserPool.Arn
+            Identity:
+              Header: Authorization
+      # Add binary media types if needed
+      BinaryMediaTypes:
+        - "*/*"
+
+  ############################################################
+  # Lambda Layer for Shipping Providers
+  ############################################################
+  ShippingProvidersLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "shipping-providers-${Environment}"
+      Description: Multi-provider shipping integration (Shippo, EasyPost, ShipStation, EasyShip)
+      ContentUri: layers/shipping/
+      CompatibleRuntimes:
+        - python3.9
+        - python3.10
+        - python3.11
+      RetentionPolicy: Retain
+
+  ############################################################
+  # DynamoDB tables
+  ############################################################
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "orders-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: order_id
+          AttributeType: S
+        - AttributeName: fulfilled
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: S
+      KeySchema:
+        - AttributeName: order_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: fulfilled-created-index
+          KeySchema:
+            - AttributeName: fulfilled
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  CustomersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "customers-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # Shared across environments on purpose
+  StripeKeysTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: stripe_keys
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: clientID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: clientID
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  ############################################################
+  # Cognito User Pool + Client (no secret)
+  ############################################################
+  AdminUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Ref AdminUserPoolName
+      AutoVerifiedAttributes: [ email ]
+      UsernameAttributes: [ email ]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          RequireUppercase: true
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+
+  AdminUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref AdminUserPool
+      ClientName: !Ref AdminAppClientName
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      RefreshTokenValidity: 30
+      AccessTokenValidity: 60
+      IdTokenValidity: 60
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+
+  ############################################################
+  # Lambda functions (Stripe cart, orders API, admin API)
+  ############################################################
+  StripeCartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: stripe_cart.lambda_handler
+      Runtime: python3.9
+      Architectures: [ x86_64 ]
+      Layers:
+        - !Ref ShippingProvidersLayer
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          ORDERS_TABLE: !Ref OrdersTable
+          CUSTOMERS_TABLE: !Ref CustomersTable
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+          KMS_ENC_CTX_APP: stripe-cart
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CustomersTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+                - dynamodb:BatchGetItem
+                - dynamodb:BatchWriteItem
+                - dynamodb:Scan
+                - dynamodb:Query
+              Resource:
+                - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${StripeKeysTable}
+                - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${StripeKeysTable}/index/*
+            - Effect: Allow
+              Action: 
+                - kms:Decrypt
+                - kms:Encrypt
+              Resource: !Ref StripeKmsKeyArn
+            # Remove this block after rewrapping legacy rows.
+            - Effect: Allow
+              Action: [ kms:Decrypt ]
+              Resource: "*"
+              Condition:
+                StringEquals:
+                  kms:EncryptionContext:app: "stripe-cart"
+      Events:
+        StripeCartRootPOST:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /
+            Method: post
+        StripeCartRootOPTIONS:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /
+            Method: options
+        StripeWebhookPOST:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /webhook/{clientID}
+            Method: post
+        StripeWebhookOPTIONS:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /webhook/{clientID}
+            Method: options
+
+  OrderManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: orders.lambda_handler
+      Runtime: python3.9
+      Architectures: [ x86_64 ]
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+          ENVIRONMENT: !Ref Environment
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        GetOrders:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /orders
+            Method: get
+        UpdateOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /orders/{order_id}
+            Method: put
+
+  # Admin: GET/PUT /admin/stripe-keys  (secured)
+  AdminKeysFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: admin_keys.lambda_handler
+      Runtime: python3.9
+      Architectures: [ x86_64 ]
+      Environment:
+        Variables:
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+              Resource:
+                - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${StripeKeysTable}
+            - Effect: Allow
+              Action:
+                - kms:Encrypt
+                - kms:Decrypt
+              Resource: !Ref StripeKmsKeyArn
+      Events:
+        GetAdminStripeKeys:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/stripe-keys
+            Method: get
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+              
+        PutAdminStripeKeys:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/stripe-keys
+            Method: put
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+              
+        OptionsAdminStripeKeys:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/stripe-keys
+            Method: options
+            
+  # Admin: POST /admin/verify  (secured)
+  AdminVerifyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: admin_verify.lambda_handler
+      Runtime: python3.9
+      Architectures: [ x86_64 ]
+      Environment:
+        Variables:
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource:
+                - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${StripeKeysTable}
+            - Effect: Allow
+              Action:
+                - kms:Decrypt
+              Resource: !Ref StripeKmsKeyArn
+      Events:
+        PostAdminVerify:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/verify
+            Method: post
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        OptionsAdminVerify:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/verify
+            Method: options
+
+  # Admin: Shipping Configuration (secured)
+  AdminShippingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: stripe_cart.lambda_handler
+      Runtime: python3.9
+      Architectures: [ x86_64 ]
+      Layers:
+        - !Ref ShippingProvidersLayer
+      Timeout: 60
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          ORDERS_TABLE: !Ref OrdersTable
+          CUSTOMERS_TABLE: !Ref CustomersTable
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+          KMS_ENC_CTX_APP: stripe-cart
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:Query
+              Resource:
+                - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${StripeKeysTable}
+                - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}
+            - Effect: Allow
+              Action:
+                - kms:Encrypt
+                - kms:Decrypt
+              Resource: !Ref StripeKmsKeyArn
+      Events:
+        GetShippingConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/shipping-config
+            Method: get
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        GetRates:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/get-rates
+            Method: post
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        OptionsGetRates:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/get-rates
+            Method: options
+        PutShippingConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/shipping-config
+            Method: put
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        TestShipping:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/test-shipping
+            Method: post
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        CreateLabel:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/create-label
+            Method: post
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        OptionsShippingConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/shipping-config
+            Method: options
+        OptionsTestShipping:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/test-shipping
+            Method: options
+        OptionsCreateLabel:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/create-label
+            Method: options
+
+  ############################################################
+  # Static site bucket (order management)
+  ############################################################
+  OrderManagementBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "order-mgmt-${Environment}-${AWS::AccountId}-${AWS::Region}"
+      WebsiteConfiguration:
+        IndexDocument: orders.html
+        ErrorDocument: error.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, HEAD]
+            AllowedOrigins: ['*']
+
+  OrderManagementBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn: OrderManagementBucket
+    Properties:
+      Bucket: !Ref OrderManagementBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join ['', [!GetAtt OrderManagementBucket.Arn, '/*']]
+
+Outputs:
+  ApiStageName:
+    Description: Deployed API stage name
+    Value: !Ref Environment
+
+  StripeCartApi:
+    Description: API Gateway endpoint URL for Stripe Cart function (root)
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+
+  StripeWebhookUrlPattern:
+    Description: Stripe Webhook URL pattern (replace {clientID} with tenant id)
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/webhook/{clientID}"
+
+  OrderManagementApi:
+    Description: API Gateway endpoint URL for Order Management
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/orders"
+
+  ShippingApiEndpoints:
+    Description: Shipping API endpoints
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/admin/shipping-config"
+
+  OrderManagementWebsite:
+    Description: Order Management Website URL
+    Value: !Sub "http://${OrderManagementBucket}.s3-website-${AWS::Region}.amazonaws.com"
+
+  OrdersTableName:
+    Description: DynamoDB Orders Table Name
+    Value: !Ref OrdersTable
+
+  CustomersTableName:
+    Description: DynamoDB Customers Table Name
+    Value: !Ref CustomersTable
+
+  StripeKeysTableName:
+    Description: DynamoDB stripe_keys Table Name
+    Value: !Ref StripeKeysTable
+
+  StripeCartFunction:
+    Description: Stripe Cart Lambda Function ARN
+    Value: !GetAtt StripeCartFunction.Arn
+
+  OrderManagementFunction:
+    Description: Order Management Lambda Function ARN
+    Value: !GetAtt OrderManagementFunction.Arn
+
+  ShippingProvidersLayer:
+    Description: Shipping Providers Lambda Layer ARN
+    Value: !Ref ShippingProvidersLayer
+
+  StripeCartFunctionIamRole:
+    Description: Implicit IAM Role created for Stripe Cart function
+    Value: !GetAtt StripeCartFunctionRole.Arn
+
+  S3BucketName:
+    Description: S3 Bucket Name for Order Management Interface
+    Value: !Ref OrderManagementBucket
+
+  AdminUserPoolId:
+    Description: Admin Cognito User Pool ID
+    Value: !Ref AdminUserPool
+
+  AdminUserPoolClientId:
+    Description: Admin Cognito User Pool App Client ID
+    Value: !Ref AdminUserPoolClient

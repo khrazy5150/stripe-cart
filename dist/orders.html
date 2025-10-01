@@ -1,0 +1,332 @@
+<!-- orders1.html (updated) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order Management - Unfulfilled Orders</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8f9fa;color:#333;line-height:1.6}
+    .container{max-width:1200px;margin:0 auto;padding:20px}
+    header{background:#fff;padding:20px 0;margin-bottom:30px;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+    h1{text-align:center;color:#2c3e50;font-size:2.2em;font-weight:600}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:30px}
+    .stat-card{background:#fff;padding:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.1);text-align:center}
+    .stat-number{font-size:2em;font-weight:800;color:#3498db;display:block}
+    .stat-label{color:#7f8c8d;font-size:.9em}
+    .filters{background:#fff;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+    .filter-group{display:flex;gap:15px;align-items:center;flex-wrap:wrap}
+    .filter-group input{padding:8px 12px;border:1px solid #ddd;border-radius:5px;font-size:14px}
+    .orders-container{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+    .order-card{border-bottom:1px solid #eee;padding:20px}
+    .order-card:last-child{border-bottom:none}
+    .order-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap}
+    .order-id{font-weight:700;font-size:1.05em;color:#2c3e50}
+    .order-date{color:#7f8c8d;font-size:.9em}
+    .order-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+    .detail-group{display:flex;flex-direction:column}
+    .detail-label{font-weight:700;color:#555;font-size:.8em;text-transform:uppercase;margin-bottom:4px}
+    .detail-value{color:#333;font-size:.95em}
+    .product-name{color:#2980b9;font-weight:600}
+    .amount{color:#27ae60;font-weight:800}
+    .fulfill-btn{background:#2ecc71;color:#fff;border:none;padding:10px 18px;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px}
+    .fulfill-btn:disabled{background:#95a5a6;cursor:not-allowed}
+    .loading-spinner{border:2px solid #f3f3f3;border-top:2px solid #3498db;border-radius:50%;width:20px;height:20px;animation:spin 1s linear infinite;margin:20px auto}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .no-orders{text-align:center;padding:40px;color:#7f8c8d}
+    .load-more-container{text-align:center;padding:30px}
+    .load-more-btn{background:#3498db;color:#fff;border:none;padding:12px 30px;border-radius:6px;cursor:pointer;font-size:14px}
+    .load-more-btn:disabled{background:#95a5a6}
+    .error-message{background:#e74c3c;color:#fff;padding:12px;border-radius:6px;margin:12px 0;text-align:center}
+    .success-message{background:#27ae60;color:#fff;padding:12px;border-radius:6px;margin:12px 0;text-align:center}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:.75rem;font-weight:700}
+    .badge-danger{background:#ffebee;color:#c62828;border:1px solid #ffcdd2}
+    .badge-success{background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9}
+    .badge-warn{background:#fff3e0;color:#ef6c00;border:1px solid #ffe0b2}
+    @media (max-width:768px){.order-details{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header><div class="container"><h1>Order Management</h1></div></header>
+
+  <div class="container">
+    <div class="stats">
+      <div class="stat-card"><span class="stat-number" id="total-orders">0</span><span class="stat-label">Total Unfulfilled Orders</span></div>
+      <div class="stat-card"><span class="stat-number" id="total-revenue">$0.00</span><span class="stat-label">Pending Revenue</span></div>
+      <div class="stat-card"><span class="stat-number" id="avg-order">$0.00</span><span class="stat-label">Average Order Value</span></div>
+    </div>
+
+    <div class="filters">
+      <div class="filter-group">
+        <input type="text" id="search-customer" placeholder="Search by customer name or email..."/>
+        <input type="text" id="search-product"  placeholder="Search by product..."/>
+        <label style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="toggle-fulfilled"/> Show fulfilled
+        </label>
+        <button onclick="clearFilters()">Clear</button>
+        <button onclick="refreshOrders()">Refresh</button>
+      </div>
+    </div>
+
+    <div id="error-container"></div>
+    <div id="success-container"></div>
+
+    <div class="orders-container">
+      <div id="orders-list"><div class="loading-spinner"></div></div>
+    </div>
+
+    <div class="load-more-container" id="load-more-container" style="display:none">
+      <button class="load-more-btn" id="load-more-btn" onclick="loadMoreOrders()">Load More Orders</button>
+    </div>
+  </div>
+
+  <script>
+    // ===== CONFIG =====
+    const ORDERS_URL = 'https://api-dev.juniorbay.com/orders';
+
+    // ===== STATE =====
+    let allOrders = [];
+    let filteredOrders = [];
+    let nextKey = null;
+    let hasMore = true;
+    let isLoading = false;
+
+    // ===== INIT =====
+    document.addEventListener('DOMContentLoaded', () => {
+      loadOrders();
+      setupEventListeners();
+    });
+
+    function setupEventListeners() {
+      document.getElementById('search-customer').addEventListener('input', filterOrders);
+      document.getElementById('search-product').addEventListener('input', filterOrders);
+      document.getElementById('toggle-fulfilled').addEventListener('change', filterOrders);
+      window.addEventListener('scroll', handleScroll);
+    }
+
+    function handleScroll() {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 900) {
+        if (hasMore && !isLoading) loadMoreOrders();
+      }
+    }
+
+    // ===== API =====
+    async function listOrdersFromAPI() {
+      const params = new URLSearchParams({ limit: '10' });
+      if (nextKey) params.set('lastKey', nextKey);
+      const res = await fetch(`${ORDERS_URL}?${params.toString()}`, { method: 'GET' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json(); // { orders, nextKey, hasMore }
+    }
+
+    async function markOrderFulfilled(orderId) {
+      const res = await fetch(`${ORDERS_URL}/${encodeURIComponent(orderId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fulfilled: true })
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    // ===== LOAD =====
+    async function loadOrders() {
+      if (isLoading) return;
+      isLoading = true;
+      showLoading();
+      try {
+        const data = await listOrdersFromAPI();
+        allOrders = allOrders.concat(data.orders || []);
+        nextKey = data.nextKey || null;
+        hasMore = !!data.hasMore;
+        filterOrders();
+        updateStats();
+        updateLoadMoreButton();
+      } catch (err) {
+        console.error(err);
+        showError('Failed to load orders. Please try again.');
+      } finally {
+        isLoading = false;
+      }
+    }
+
+    async function loadMoreOrders() {
+      if (!hasMore || isLoading) return;
+      await loadOrders();
+    }
+
+    // ===== FILTER / DISPLAY =====
+    function filterOrders() {
+      const customerSearch = document.getElementById('search-customer').value.toLowerCase();
+      const productSearch  = document.getElementById('search-product').value.toLowerCase();
+      const showFulfilled  = document.getElementById('toggle-fulfilled').checked;
+
+      filteredOrders = (allOrders || []).filter(order => {
+        const name  = (order.customer_name  || '').toLowerCase();
+        const email = (order.customer_email || '').toLowerCase();
+        const prod  = (order.product_name   || '').toLowerCase();
+
+        const customerMatch = !customerSearch || name.includes(customerSearch) || email.includes(customerSearch);
+        const productMatch  = !productSearch  || prod.includes(productSearch);
+
+        const isFulfilled = (order.fulfilled === true || order.fulfilled === 'true');
+        const paid = (order.payment_status || '').toLowerCase() === 'succeeded';
+
+        // “Needs Fulfillment” = paid && !fulfilled
+        const statusMatch = paid && (showFulfilled ? true : !isFulfilled);
+
+        return customerMatch && productMatch && statusMatch;
+      });
+
+      renderOrders();
+      updateStats();
+    }
+
+    function renderOrders() {
+      const list = document.getElementById('orders-list');
+
+      if (filteredOrders.length === 0) {
+        list.innerHTML = `
+          <div class="no-orders">
+            <h3>No orders need fulfillment 🎉</h3>
+            <p>Everything paid is shipped—or your search filters are too narrow.</p>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = filteredOrders.map(order => {
+        const isFulfilled = (order.fulfilled === true || order.fulfilled === 'true');
+        const paid = (order.payment_status || '').toLowerCase() === 'succeeded';
+        const badge = !paid
+          ? `<span class="badge badge-warn">Payment Pending</span>`
+          : isFulfilled
+            ? `<span class="badge badge-success">Fulfilled</span>`
+            : `<span class="badge badge-danger">Needs Fulfillment</span>`;
+
+        const shipAddr = order.shipping_address && order.shipping_address !== 'N/A' ? order.shipping_address : 'N/A';
+
+        return `
+          <div class="order-card" data-order-id="${order.order_id}">
+            <div class="order-header">
+              <div class="order-id">Order #${escapeHtml(order.order_id)}</div>
+              <div class="order-date">${escapeHtml(order.order_date)} &nbsp; ${badge}</div>
+            </div>
+
+            <div class="order-details">
+              <div class="detail-group">
+                <div class="detail-label">Customer</div>
+                <div class="detail-value">${escapeHtml(order.customer_name || 'N/A')}</div>
+                <div class="detail-value">${escapeHtml(order.customer_email || 'N/A')}</div>
+                <div class="detail-value">${escapeHtml(order.customer_phone || 'N/A')}</div>
+              </div>
+
+              <div class="detail-group">
+                <div class="detail-label">Product</div>
+                <div class="detail-value product-name">${escapeHtml(order.product_name || 'N/A')}</div>
+                <div class="detail-value amount">${formatCurrency(order.amount, order.currency)}</div>
+              </div>
+
+              <div class="detail-group">
+                <div class="detail-label">Shipping Address</div>
+                <div class="detail-value">${escapeHtml(shipAddr)}</div>
+              </div>
+
+              <div class="detail-group">
+                <div class="detail-label">Actions</div>
+                <button class="fulfill-btn" ${!paid || isFulfilled ? 'disabled' : ''} onclick="fulfillOrder('${order.order_id}')">
+                  ${isFulfilled ? 'Already Fulfilled' : 'Mark as Fulfilled'}
+                </button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ===== ACTION =====
+    async function fulfillOrder(orderId) {
+      if (!confirm('Mark this order as fulfilled?')) return;
+
+      const btn = document.querySelector(`[data-order-id="${orderId}"] .fulfill-btn`);
+      const originalText = btn.textContent;
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+        await markOrderFulfilled(orderId);
+
+        // update local state
+        allOrders = allOrders.map(o => o.order_id === orderId ? { ...o, fulfilled: true } : o);
+        filterOrders();
+        showSuccess('Order marked as fulfilled!');
+      } catch (err) {
+        console.error(err);
+        showError('Failed to mark order as fulfilled. Please try again.');
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
+    // ===== STATS / HELPERS =====
+    function updateStats() {
+      const pending = filteredOrders.filter(o => (o.payment_status || '').toLowerCase() === 'succeeded' && !(o.fulfilled === true || o.fulfilled === 'true'));
+      const total = pending.reduce((sum, o) => sum + (o.amount || 0), 0);
+      const avg = pending.length ? total / pending.length : 0;
+
+      document.getElementById('total-orders').textContent   = pending.length;
+      document.getElementById('total-revenue').textContent  = formatCurrency(total, 'usd');
+      document.getElementById('avg-order').textContent      = formatCurrency(avg, 'usd');
+    }
+
+    function updateLoadMoreButton() {
+      const c = document.getElementById('load-more-container');
+      const b = document.getElementById('load-more-btn');
+      if (hasMore && !isLoading) { c.style.display = 'block'; b.disabled = false; b.textContent = 'Load More Orders'; }
+      else if (isLoading)        { c.style.display = 'block'; b.disabled = true;  b.textContent = 'Loading...'; }
+      else                       { c.style.display = 'none'; }
+    }
+
+    function clearFilters() {
+      document.getElementById('search-customer').value = '';
+      document.getElementById('search-product').value  = '';
+      document.getElementById('toggle-fulfilled').checked = false;
+      filterOrders();
+    }
+
+    function refreshOrders() {
+      allOrders = [];
+      filteredOrders = [];
+      nextKey = null;
+      hasMore = true;
+      document.getElementById('orders-list').innerHTML = '<div class="loading-spinner"></div>';
+      loadOrders();
+    }
+
+    function formatCurrency(amount, currency='usd') {
+      const fmt = new Intl.NumberFormat('en-US', { style:'currency', currency:(currency||'usd').toUpperCase() });
+      return fmt.format((amount || 0)/100);
+    }
+
+    function showLoading() {
+      if (allOrders.length === 0) {
+        document.getElementById('orders-list').innerHTML = '<div class="loading-spinner"></div>';
+      }
+    }
+
+    function showError(message) {
+      const c = document.getElementById('error-container');
+      c.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+      setTimeout(() => c.innerHTML = '', 4000);
+    }
+
+    function showSuccess(message) {
+      const c = document.getElementById('success-container');
+      c.innerHTML = `<div class="success-message">${escapeHtml(message)}</div>`;
+      setTimeout(() => c.innerHTML = '', 3000);
+    }
+
+    function escapeHtml(s) {
+      return String(s||'').replace(/[&<>"'`=\/]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'}[t]));
+    }
+  </script>
+</body>
+</html>

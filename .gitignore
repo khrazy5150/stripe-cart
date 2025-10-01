@@ -1,0 +1,5 @@
+.DS_Store
+.aws-sam/
+deploy/
+.git
+dist/trash/

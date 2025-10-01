@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stripe Cart — Admin</title>
+<style>
+  :root { --bg:#0b1220; --card:#121a2b; --muted:#8892a6; --text:#e6edf3; --brand:#6aa8ff; --accent:#22c55e; --danger:#ef4444; }
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  .wrap{max-width:920px;margin:40px auto;padding:0 16px}
+  .grid{display:grid;grid-template-columns:320px 1fr;gap:24px}
+  .card{background:var(--card);border:1px solid #1d2942;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+  .pane{padding:18px}
+  h1{font-size:20px;margin:0 0 10px}
+  h2{font-size:16px;margin:16px 0 8px;color:#c7d2fe}
+  label{display:block;margin:10px 0 4px;color:var(--muted);font-size:12px}
+  input,select,button,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #263453;background:#0f1626;color:var(--text)}
+  input:focus,textarea:focus,select:focus{outline:2px solid #35528b;border-color:#35528b}
+  button{cursor:pointer;background:var(--brand);border:0;color:#0b1220;font-weight:600}
+  button.secondary{background:#1e293b;color:#cbd5e1;border:1px solid #334155}
+  .row{display:flex;gap:10px;align-items:center}
+  .row>*{flex:1}
+  .muted{color:var(--muted)}
+  .link{color:#a5b4fc;cursor:pointer;text-decoration:underline}
+  .ok{color:var(--accent)} .err{color:var(--danger)}
+  .hidden{display:none}
+  .mt8{margin-top:8px} .mt12{margin-top:12px} .mt16{margin-top:16px} .mt24{margin-top:24px}
+  .mono{font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#0f1a2e;border:1px solid #233657;color:#9fb3cc;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="grid">
+    <div class="card">
+      <div class="pane">
+        <h1>Admin Sign-in</h1>
+        <div class="badge">Env: <span id="envLabel" class="mono"></span></div>
+
+        <!-- Tabs -->
+        <div class="row mt16">
+          <button id="tabLogin">Login</button>
+          <button id="tabRegister" class="secondary">Register</button>
+          <button id="tabForgot" class="secondary">Forgot</button>
+        </div>
+
+        <!-- Login -->
+        <div id="viewLogin" class="mt16">
+          <label>Email</label>
+          <input id="loginEmail" type="email" autocomplete="username" />
+          <label>Password</label>
+          <input id="loginPass" type="password" autocomplete="current-password" />
+          <button id="btnLogin" class="mt12">Sign in</button>
+          <div id="loginMsg" class="mt12 muted"></div>
+        </div>
+
+        <!-- Register -->
+        <div id="viewRegister" class="mt16 hidden">
+          <label>Email</label>
+          <input id="regEmail" type="email" />
+          <label>Password</label>
+          <input id="regPass" type="password" />
+          <button id="btnRegister" class="mt12">Create account</button>
+          <div class="mt12 muted">After sign-up, check your email for the verification code.</div>
+
+          <h2 class="mt16">Confirm email</h2>
+          <label>Email</label>
+          <input id="confEmail" type="email" />
+          <label>Verification code</label>
+          <input id="confCode" type="text" />
+          <div class="row mt8">
+            <button id="btnConfirm">Confirm</button>
+            <button id="btnResend" class="secondary">Resend code</button>
+          </div>
+          <div id="regMsg" class="mt12 muted"></div>
+        </div>
+
+        <!-- Forgot -->
+        <div id="viewForgot" class="mt16 hidden">
+          <h2>Reset password</h2>
+          <label>Email</label>
+          <input id="fpEmail" type="email" />
+          <button id="btnForgot" class="mt12">Send reset code</button>
+
+          <h2 class="mt16">Confirm new password</h2>
+          <label>Email</label>
+          <input id="fpConfEmail" type="email" />
+          <label>Code</label>
+          <input id="fpCode" type="text" />
+          <label>New password</label>
+          <input id="fpNewPass" type="password" />
+          <button id="btnConfirmNew" class="mt12">Set new password</button>
+          <div id="fpMsg" class="mt12 muted"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="pane">
+        <h1>Tenant Stripe Keys</h1>
+        <div class="muted">Use your tenant’s <span class="mono">clientID</span> (the ID you pass from the offer page).</div>
+
+        <div id="authedOnly" class="hidden">
+          <div class="row mt16">
+            <div class="badge">Signed in: <span id="who" class="mono"></span></div>
+            <button id="btnSignOut" class="secondary" style="max-width:140px">Sign out</button>
+          </div>
+
+          <h2 class="mt16">Lookup / Update</h2>
+          <label>clientID</label>
+          <input id="clientID" class="mono" placeholder="c85d5a3d-663e-4372-bc71-376881d5f63d" />
+
+          <div class="row mt8">
+            <button id="btnGet">Get</button>
+            <button id="btnSave" class="secondary">Save</button>
+          </div>
+
+          <label class="mt16">mode</label>
+          <select id="mode">
+            <option value="test">test</option>
+            <option value="live">live</option>
+          </select>
+
+          <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px; margin-top:12px">
+            <div>
+              <label>pk_test</label><input id="pk_test" class="mono" />
+              <label>sk_test (plaintext)</label><input id="sk_test" class="mono" />
+              <label>wh_secret_test</label><input id="wh_test" class="mono" />
+            </div>
+            <div>
+              <label>pk_live</label><input id="pk_live" class="mono" />
+              <label>sk_live (plaintext)</label><input id="sk_live" class="mono" />
+              <label>wh_secret_live</label><input id="wh_live" class="mono" />
+            </div>
+          </div>
+
+          <div class="row mt16">
+            <button id="btnVerify" title="Calls /admin/verify">Verify Webhook Secret</button>
+            <div id="verifyMsg" class="muted"></div>
+          </div>
+        </div>
+
+        <div id="needLogin" class="muted">Please sign in to manage keys.</div>
+        <div id="apiMsg" class="mt12 muted"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Cognito SDK (SRP helper) -->
+<script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.10/dist/amazon-cognito-identity.min.js"></script>
+<script>
+// ======== CONFIG ========
+const CONFIG = {
+  region:        'us-west-2',                  // your AWS region
+  userPoolId:    'us-west-2_y3y4RSL5w',        // Output: AdminUserPoolId
+  userPoolWebClientId: 'd3v79k0pa9qibco7rpqlda8vd',      // Output: AdminUserPoolClientId (no secret)
+  apiBase:       'https://api-dev.juniorbay.com', // custom domain + stage OR execute-api URL
+  // If you kept AuthorizationScopes on API methods, SRP tokens won't carry scopes → remove scopes or switch to Hosted UI.
+};
+
+// ======== Cognito helpers ========
+const Cognito = AmazonCognitoIdentity;
+const pool = new Cognito.CognitoUserPool({
+  UserPoolId: CONFIG.userPoolId,
+  ClientId: CONFIG.userPoolWebClientId
+});
+
+function setMsg(id, text, kind='') {
+  const el = document.getElementById(id);
+  el.className = `mt12 ${kind ? (kind==='err'?'err':'ok') : 'muted'}`;
+  el.textContent = text || '';
+}
+
+function tab(showId) {
+  for (const id of ['viewLogin','viewRegister','viewForgot']) {
+    document.getElementById(id).classList.toggle('hidden', id!==showId);
+  }
+  document.getElementById('tabLogin').classList.toggle('secondary', showId!=='viewLogin');
+  document.getElementById('tabRegister').classList.toggle('secondary', showId!=='viewRegister');
+  document.getElementById('tabForgot').classList.toggle('secondary', showId!=='viewForgot');
+}
+
+function currentUser() {
+  return pool.getCurrentUser();
+}
+
+// CHANGED: Promise-based getSession returns the session object directly
+function getSession() {
+  return new Promise((resolve, reject) => {
+  const cu = currentUser();
+    if (!cu) return reject(new Error('Not signed in'));
+  cu.getSession((err, session) => {
+      if (err) return reject(err);
+      if (!session || !session.isValid()) return reject(new Error('Invalid session'));
+      resolve(session);
+    });
+  });
+}
+
+// ======== UI wiring ========
+document.getElementById('envLabel').textContent =
+  (CONFIG.apiBase.includes('/prod') ? 'prod' : 'dev');
+document.getElementById('tabLogin').onclick    = () => tab('viewLogin');
+document.getElementById('tabRegister').onclick = () => tab('viewRegister');
+document.getElementById('tabForgot').onclick   = () => tab('viewForgot');
+
+document.getElementById('btnRegister').onclick = () => {
+  const email = document.getElementById('regEmail').value.trim();
+  const pass  = document.getElementById('regPass').value;
+  if (!email || !pass) return setMsg('regMsg','Email and password required','err');
+
+  const attrs = [ new Cognito.CognitoUserAttribute({ Name:'email', Value: email }) ];
+  pool.signUp(email, pass, attrs, [], (err, data) => {
+    if (err) return setMsg('regMsg', err.message || String(err), 'err');
+    setMsg('regMsg', 'Sign-up successful. Please check your email for the code.', 'ok');
+    document.getElementById('confEmail').value = email;
+  });
+};
+
+document.getElementById('btnConfirm').onclick = () => {
+  const email = document.getElementById('confEmail').value.trim();
+  const code  = document.getElementById('confCode').value.trim();
+  if (!email || !code) return setMsg('regMsg','Email and code required','err');
+
+  const user = new Cognito.CognitoUser({ Username: email, Pool: pool });
+  user.confirmRegistration(code, true, (err, res) => {
+    if (err) return setMsg('regMsg', err.message || String(err), 'err');
+    setMsg('regMsg','Email confirmed. You can sign in now.','ok');
+  });
+};
+
+document.getElementById('btnResend').onclick = () => {
+  const email = document.getElementById('confEmail').value.trim();
+  if (!email) return setMsg('regMsg','Email required to resend','err');
+  const user = new Cognito.CognitoUser({ Username: email, Pool: pool });
+  user.resendConfirmationCode((err) => {
+    if (err) return setMsg('regMsg', err.message || String(err), 'err');
+    setMsg('regMsg','Verification code resent.','ok');
+  });
+};
+
+document.getElementById('btnLogin').onclick = () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  if (!email || !pass) return setMsg('loginMsg','Email and password required','err');
+
+  const auth = new Cognito.AuthenticationDetails({ Username: email, Password: pass });
+  const user = new Cognito.CognitoUser({ Username: email, Pool: pool });
+  user.authenticateUser(auth, {
+    onSuccess: (result) => {
+      setMsg('loginMsg','Signed in.','ok');
+      afterAuth();
+    },
+    onFailure: (err) => setMsg('loginMsg', err.message || String(err), 'err')
+  });
+};
+
+document.getElementById('btnForgot').onclick = () => {
+  const email = document.getElementById('fpEmail').value.trim();
+  if (!email) return setMsg('fpMsg','Enter your email','err');
+  const user = new Cognito.CognitoUser({ Username: email, Pool: pool });
+  user.forgotPassword({
+    onSuccess: () => setMsg('fpMsg','Reset code sent to your email.','ok'),
+    onFailure: (err) => setMsg('fpMsg', err.message || String(err), 'err')
+  });
+};
+
+document.getElementById('btnConfirmNew').onclick = () => {
+  const email = document.getElementById('fpConfEmail').value.trim();
+  const code  = document.getElementById('fpCode').value.trim();
+  const pass  = document.getElementById('fpNewPass').value;
+  if (!email || !code || !pass) return setMsg('fpMsg','All fields required','err');
+  const user = new Cognito.CognitoUser({ Username: email, Pool: pool });
+  user.confirmPassword(code, pass, {
+    onSuccess: () => setMsg('fpMsg','Password updated. You can sign in.','ok'),
+    onFailure: (err) => setMsg('fpMsg', err.message || String(err), 'err')
+  });
+};
+
+document.getElementById('btnSignOut').onclick = () => {
+  const cu = currentUser(); if (cu) cu.signOut();
+  document.getElementById('authedOnly').classList.add('hidden');
+  document.getElementById('needLogin').classList.remove('hidden');
+  setMsg('apiMsg','Signed out.');
+};
+
+
+async function authedFetch(path, opts = {}) {
+  try {
+    const session = await getSession();
+    const idToken = session.getIdToken().getJwtToken();
+
+    console.log('Making authenticated request to:', `${CONFIG.apiBase}${path}`);
+    console.log('Method:', opts.method || 'GET');
+    console.log('Token preview:', idToken.substring(0, 50) + '...');
+
+    const headers = {
+      'Authorization': `Bearer ${idToken}`,
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+    };
+
+    const init = {
+      method: opts.method || 'GET',
+      headers,
+      mode: 'cors',
+      credentials: 'omit',
+      body: opts.body != null
+        ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body))
+        : undefined,
+    };
+
+    console.log('Request init:', init);
+
+    const resp = await fetch(`${CONFIG.apiBase}${path}`, init);
+    console.log('Response status:', resp.status);
+    console.log('Response headers:', [...resp.headers.entries()]);
+    
+    const txt = await resp.text();
+    console.log('Response text:', txt);
+    
+    let body;
+    try { 
+      body = JSON.parse(txt);
+    } catch { 
+      body = { raw: txt };
+    }
+    
+    return { ok: resp.ok, status: resp.status, body, headers: resp.headers };
+    
+  } catch (error) {
+    console.error('authedFetch error:', error);
+    setMsg('apiMsg', `Network error: ${error.message}`, 'err');
+    throw error;
+  }
+}
+
+// Updated button handlers with better error handling
+document.getElementById('btnGet').onclick = async () => {
+  try {
+    const id = document.getElementById('clientID').value.trim();
+    if (!id) return setMsg('apiMsg','Enter clientID','err');
+    
+    console.log('Getting data for clientID:', id);
+    const res = await authedFetch(`/admin/stripe-keys?clientID=${encodeURIComponent(id)}`);
+    
+    if (!res.ok) {
+      console.error('GET failed:', res);
+      return setMsg('apiMsg', `GET failed (${res.status}): ${JSON.stringify(res.body)}`, 'err');
+    }
+    
+    setMsg('apiMsg','Loaded.','ok');
+    const v = typeof res.body === 'string' ? {} : (res.body || {});
+    console.log('Loaded data:', v);
+    
+    document.getElementById('mode').value = v.mode || 'test';
+    ['pk_test','sk_test','wh_test','pk_live','sk_live','wh_live'].forEach(k=>{
+      const map = {wh_test:'wh_secret_test',wh_live:'wh_secret_live'};
+      const src = map[k] || k;
+      document.getElementById(k).value = v[src] || '';
+    });
+  } catch (error) {
+    console.error('btnGet error:', error);
+    setMsg('apiMsg', `Error: ${error.message}`, 'err');
+  }
+};
+
+document.getElementById('btnSave').onclick = async () => {
+  try {
+    const id = document.getElementById('clientID').value.trim();
+    if (!id) return setMsg('apiMsg','Enter clientID','err');
+    
+    const payload = {
+      clientID: id,
+      mode: document.getElementById('mode').value,
+      pk_test: document.getElementById('pk_test').value,
+      pk_live: document.getElementById('pk_live').value,
+      sk_test: document.getElementById('sk_test').value,
+      sk_live: document.getElementById('sk_live').value,
+      wh_secret_test: document.getElementById('wh_test').value,
+      wh_secret_live: document.getElementById('wh_live').value,
+    };
+    
+    console.log('Saving payload:', payload);
+    const res = await authedFetch(`/admin/stripe-keys`, { method: 'PUT', body: payload });
+    
+    if (!res.ok) {
+      console.error('SAVE failed:', res);
+      return setMsg('apiMsg', `SAVE failed (${res.status}): ${JSON.stringify(res.body)}`, 'err');
+    }
+    
+    console.log('Save successful:', res.body);
+    setMsg('apiMsg','Saved.','ok');
+  } catch (error) {
+    console.error('btnSave error:', error);
+    setMsg('apiMsg', `Error: ${error.message}`, 'err');
+  }
+};
+
+document.getElementById('btnVerify').onclick = async () => {
+  try {
+    const id = document.getElementById('clientID').value.trim();
+    const mode = document.getElementById('mode').value;
+    
+    if (!id) return setMsg('verifyMsg','Enter clientID','err');
+    
+    console.log('Verifying clientID:', id, 'mode:', mode);
+    
+    const payload = { 
+      clientID: id, 
+      mode: mode 
+    };
+    
+    const res = await authedFetch(`/admin/verify`, { 
+      method: 'POST', 
+      body: payload 
+    });
+    
+    console.log('Verify response:', res);
+    
+    if (res.ok) {
+      const result = res.body;
+      let msg = `Verification complete:\n`;
+      msg += `• Publishable key: ${result.publishable_key_ok ? '✓' : '✗'}\n`;
+      msg += `• Secret key: ${result.secret_key_ok ? '✓' : '✗'}\n`;
+      msg += `• Webhook secret: ${result.webhook_secret_ok ? '✓' : '✗'}\n`;
+      
+      if (result.stripe_account) {
+        msg += `• Stripe account: ${result.stripe_account}\n`;
+      }
+      
+      if (result.notes && result.notes.length > 0) {
+        msg += `\nNotes:\n${result.notes.join('\n')}`;
+      }
+      
+      document.getElementById('verifyMsg').textContent = msg;
+      document.getElementById('verifyMsg').className = 'muted';
+    } else {
+      const errorMsg = `Verification failed (${res.status}): ${JSON.stringify(res.body)}`;
+      document.getElementById('verifyMsg').textContent = errorMsg;
+      document.getElementById('verifyMsg').className = 'err';
+    }
+    
+  } catch (error) {
+    console.error('btnVerify error:', error);
+    document.getElementById('verifyMsg').textContent = `Error: ${error.message}`;
+    document.getElementById('verifyMsg').className = 'err';
+  }
+};
+
+// Auto-show signed-in state if session exists
+afterAuth();
+function afterAuth() {
+  getSession()
+    .then(() => {
+      document.getElementById('authedOnly').classList.remove('hidden');
+      document.getElementById('needLogin').classList.add('hidden');
+      const cu = currentUser();
+      document.getElementById('who').textContent = cu ? cu.getUsername() : '';
+    })
+    .catch(() => {
+      document.getElementById('authedOnly').classList.add('hidden');
+      document.getElementById('needLogin').classList.remove('hidden');
+    });
+}
+
+// Add this debugging function to your login.html
+function debugAuth() {
+  getSession()
+    .then(session => {
+      console.log('Session:', session);
+      console.log('ID Token:', session.getIdToken().getJwtToken());
+      console.log('Access Token:', session.getAccessToken().getJwtToken());
+      console.log('ID Token Payload:', session.getIdToken().payload);
+      console.log('Access Token Payload:', session.getAccessToken().payload);
+    })
+    .catch(err => console.error('Debug auth error:', err));
+}
+
+// Call this after successful login to see token structure
+// Add to your btnLogin onclick success callback:
+document.getElementById('btnLogin').onclick = () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  if (!email || !pass) return setMsg('loginMsg','Email and password required','err');
+
+  const auth = new Cognito.AuthenticationDetails({ Username: email, Password: pass });
+  const user = new Cognito.CognitoUser({ Username: email, Pool: pool });
+  user.authenticateUser(auth, {
+    onSuccess: (result) => {
+      setMsg('loginMsg','Signed in.','ok');
+      debugAuth(); // Add this line
+      afterAuth();
+    },
+    onFailure: (err) => setMsg('loginMsg', err.message || String(err), 'err')
+  });
+};
+</script>
+</body>
+</html>
