@@ -1117,7 +1117,7 @@ input[type="password"],
 input[type="number"],
 input[type="tel"],
 input[type="url"],
-input[type="search"],
+/* input[type="search"], */
 input[type="date"],
 input[type="time"],
 input[type="datetime-local"],
@@ -2240,6 +2240,10 @@ table tbody tr:hover,
     display: grid;
     grid-template-columns: 2fr 1fr;
     gap: var(--spacing-6);
+}
+
+.content-grid.single-column {
+    grid-template-columns: 1fr;
 }
 
 /* ============================================================================
