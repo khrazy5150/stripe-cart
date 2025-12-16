@@ -179,30 +179,32 @@ const dashboardOffersState = {
         const statusClass = offer.active ? 'offer-card-status active' : 'offer-card-status inactive';
         const statusLabel = offer.active ? 'Active' : 'Inactive';
 
-        // Generate responsive image markup
+        // Generate responsive image markup using <picture> element
         let imageMarkup;
         if (offer.image) {
             // Check if image is from juniorbay image service (supports responsive sizes)
             const isJuniorBayImage = offer.image.includes('images.juniorbay.net') ||
                                      offer.image.includes('images.juniorbay.com');
 
+            let thumbUrl, mediumUrl;
             if (isJuniorBayImage) {
-                // Use <picture> element for responsive images
+                // Generate thumb and medium URLs for optimized images
                 const baseUrl = offer.image.replace(/\/(medium|thumb|large)\.webp$/, '');
-                const thumbUrl = `${baseUrl}/thumb.webp`;
-                const mediumUrl = `${baseUrl}/medium.webp`;
-
-                imageMarkup = `
-                    <picture>
-                        <source media="(max-width: 768px)" srcset="${safeHtml(thumbUrl)}">
-                        <source media="(min-width: 769px)" srcset="${safeHtml(mediumUrl)}">
-                        <img src="${safeHtml(mediumUrl)}" alt="${safeHtml(offer.name)}" loading="lazy">
-                    </picture>
-                `;
+                thumbUrl = `${baseUrl}/thumb.webp`;
+                mediumUrl = `${baseUrl}/medium.webp`;
             } else {
-                // Use regular img tag for Stripe or other sources
-                imageMarkup = `<img src="${safeHtml(offer.image)}" alt="${safeHtml(offer.name)}" loading="lazy">`;
+                // Use same URL for all sources (e.g., Stripe images)
+                thumbUrl = offer.image;
+                mediumUrl = offer.image;
             }
+
+            imageMarkup = `
+                <picture>
+                    <source media="(max-width: 768px)" srcset="${safeHtml(thumbUrl)}">
+                    <source media="(min-width: 769px)" srcset="${safeHtml(mediumUrl)}">
+                    <img src="${safeHtml(mediumUrl)}" alt="${safeHtml(offer.name)}" loading="lazy">
+                </picture>
+            `;
         } else {
             imageMarkup = `<div class="offer-card-placeholder">${giftIconSVG()}</div>`;
         }
