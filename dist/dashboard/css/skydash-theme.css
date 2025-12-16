@@ -983,6 +983,91 @@ img {
     color: var(--text-primary);
 }
 
+/* Icon Buttons */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.btn-icon:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Icon Button Variants */
+.btn-icon-primary {
+    background-color: var(--brand-light);
+    color: var(--brand-primary);
+}
+
+.btn-icon-primary:hover {
+    background-color: var(--brand-primary);
+    color: var(--text-inverse);
+}
+
+.btn-icon-success {
+    background-color: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.btn-icon-success:hover {
+    background-color: var(--color-success);
+    color: var(--text-inverse);
+}
+
+.btn-icon-danger {
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger);
+}
+
+.btn-icon-danger:hover {
+    background-color: var(--color-danger);
+    color: var(--text-inverse);
+}
+
+/* Tooltip for Icon Buttons */
+.btn-icon[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background-color: var(--text-primary);
+    color: var(--text-inverse);
+    font-size: var(--font-size-xs);
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.btn-icon[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: var(--text-primary);
+    pointer-events: none;
+    z-index: 1000;
+}
+
 /* Outline Buttons */
 .btn.btn-outline-primary {
     background-color: transparent;
