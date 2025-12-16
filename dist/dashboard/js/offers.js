@@ -319,9 +319,17 @@ const dashboardOffersState = {
         return div.innerHTML;
     }
 
+    function clearOffers() {
+        dashboardOffersState.offers = [];
+        dashboardOffersState.clientID = '';
+        renderOfferCards();
+        setMsg('offersListMessage', '', 'info');
+    }
+
     window.OffersDashboard = {
         init,
         loadOffers: loadOffersList,
+        clearOffers,
         viewOffer,
         editOffer,
         deleteOffer

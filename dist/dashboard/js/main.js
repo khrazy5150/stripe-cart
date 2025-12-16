@@ -486,13 +486,18 @@
         state.env = nextEnv;
         localStorage.setItem('env', state.env);
         updateEnvBadge();
-        
+
         document.body.classList.remove('env-dev', 'env-prod');
         document.body.classList.add(`env-${state.env}`);
-        
+
         updateBaseUrl();
         syncThemeWithEnv();
         fetchDashboardStats();
+
+        // Clear offers when switching environments to force fresh load
+        if (window.OffersDashboard && typeof window.OffersDashboard.clearOffers === 'function') {
+            window.OffersDashboard.clearOffers();
+        }
     }
 
     function updateEnvBadge() {
