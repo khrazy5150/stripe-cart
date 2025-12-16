@@ -473,6 +473,11 @@
             try {
                 await window.setEnvironment(nextEnv);
                 renderOffersTab();
+                // Clear offers when switching environments to force fresh load
+                if (window.OffersDashboard && typeof window.OffersDashboard.clearOffers === 'function') {
+                    console.log('Clear offers');
+                    window.OffersDashboard.clearOffers();
+                }
                 return;
             } catch (error) {
                 console.error('Failed to switch environment via setEnvironment:', error);
@@ -493,11 +498,6 @@
         updateBaseUrl();
         syncThemeWithEnv();
         fetchDashboardStats();
-
-        // Clear offers when switching environments to force fresh load
-        if (window.OffersDashboard && typeof window.OffersDashboard.clearOffers === 'function') {
-            window.OffersDashboard.clearOffers();
-        }
     }
 
     function updateEnvBadge() {
