@@ -2824,11 +2824,15 @@ table tbody tr:hover,
     }
     
     .offer-card-media img,
+    .offer-card-media picture,
     .offer-card-placeholder {
         width: 100%;
-        max-width: 200px;
         height: auto;
-        max-height: 160px;
+    }
+
+    .offer-card-media img {
+        max-height: 200px;
+        object-fit: cover;
     }
 }
 
