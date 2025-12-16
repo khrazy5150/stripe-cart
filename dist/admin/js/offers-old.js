@@ -1,0 +1,1370 @@
+// ======== ENHANCED OFFERS MANAGEMENT WITH VISUAL PRODUCT SELECTOR ========
+
+let currentOfferData = {};
+let isLoadingOffers = false;
+let offersAvailableProducts = []; // Namespaced to avoid conflicts
+const offerProductOrder = new Map(); // NEW: Track product order for each offer (offerKey -> [productId1, productId2, ...])
+
+// ======== AUTO-LOAD ON TAB SWITCH ========
+
+function initOffersTab() {
+    const clientID = window.currentClientID ? window.currentClientID() : null;
+    if (clientID && !isLoadingOffers && Object.keys(currentOfferData).length === 0) {
+        loadOffers(clientID);
+    }
+}
+
+// ======== LOAD OFFERS ========
+
+async function loadOffers(clientID) {
+    if (isLoadingOffers) return;
+    
+    try {
+        isLoadingOffers = true;
+        
+        // Use currentClientID if no clientID provided
+        if (!clientID) {
+            clientID = window.currentClientID ? window.currentClientID() : null;
+        }
+        
+        if (!clientID) {
+            setMsg('offersMsg', 'No client ID available. Please sign in.', 'error');
+            return;
+        }
+        
+        setMsg('offersMsg', 'Loading offers...', 'info');
+        
+        // const res = await authedFetch(`/`, { 
+        //     method: 'POST', 
+        //     body: { 
+        //         action: "get_client_offers",
+        //         clientID: clientID
+        //     } 
+        // });
+
+        const res = await authedFetch(`/admin/offers?clientID=${encodeURIComponent(clientID)}`, {
+            method: 'GET',
+            headers: { 'X-Client-Id': clientID }
+        });
+
+        
+        if (res.ok && res.body) {
+            currentOfferData = res.body;
+
+            // Display current mode and preview URL
+            const modeSpan = document.getElementById('currentMode');
+            if (modeSpan) {
+                modeSpan.textContent = currentOfferData.mode || 'test';
+            }
+            
+            const previewUrl = document.getElementById('previewUrl');
+            if (previewUrl && currentOfferData.base_url) {
+                previewUrl.textContent = `${currentOfferData.base_url}{offer-path}/`;
+            }
+            
+            // Set base URL (read-only display)
+            const baseUrlField = document.getElementById('baseFrontendUrl');
+            if (baseUrlField) {
+                baseUrlField.value = currentOfferData.base_url || '';
+                baseUrlField.readOnly = false; // Allow editing if needed
+            }
+            
+            // Clear and populate offers
+            const container = document.getElementById('offersContainer');
+            if (container) {
+                container.innerHTML = '';
+                
+                const offers = currentOfferData.offers || {};
+                const offerKeys = Object.keys(offers);
+                
+                if (offerKeys.length === 0) {
+                    container.innerHTML = '<div class="no-orders">No offers configured yet. Click "+ Add Offer" to create one.</div>';
+                } else {
+                    offerKeys.forEach(key => {
+                        addOfferToDOM(key, offers[key]);
+                    });
+                }
+                
+                setMsg('offersMsg', `Loaded ${offerKeys.length} offer(s) for client ${clientID}`, 'success');
+            }
+        } else {
+            const errorMsg = res.body?.error || res.body?.raw || 'Unknown error';
+            setMsg('offersMsg', `Failed to load offers: ${errorMsg}`, 'error');
+            console.error('Load offers error:', res);
+        }
+    } catch (error) {
+        console.error('Error loading offers:', error);
+        setMsg('offersMsg', `Error loading offers: ${error.message}`, 'error');
+    } finally {
+        isLoadingOffers = false;
+    }
+}
+
+// ======== LOAD AVAILABLE PRODUCTS ========
+
+async function loadAvailableProducts() {
+  try {
+    const clientID = window.currentClientID ? window.currentClientID() : null;
+    if (!clientID) return [];
+
+    const res = await authedFetch(`/`, {
+      method: 'POST',
+      headers: { 'X-Client-Id': clientID },
+      body: { action: 'get_available_products' }
+    });
+
+    if (res.ok && !res.body?.error) {
+      offersAvailableProducts = res.body.products || [];
+      return offersAvailableProducts;
+    } else {
+      console.error('Failed to load products:', res);
+      setMsg('offersMsg', res.body?.error || `HTTP ${res.status}`, 'error');
+    }
+  } catch (err) {
+    console.error('Failed to load products:', err);
+    setMsg('offersMsg', `Failed to load products: ${err.message}`, 'error');
+  }
+  return [];
+}
+
+// ======== VISUAL PRODUCT SELECTOR MODAL ========
+
+function openProductSelector(offerElement) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('productSelectorModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'productSelectorModal';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 800px; max-height: 85vh;">
+                <div class="modal-header">
+                    Select Products for Offer
+                    <button class="modal-close-btn" onclick="closeProductSelector()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="product-selector-search">
+                        <input type="text" id="productSearchInput" placeholder="Search products..." 
+                               onkeyup="filterProductSelector()">
+                    </div>
+                    <div id="productSelectorGrid" class="product-selector-grid">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    <div class="selected-products-summary">
+                        <strong>Selected:</strong> <span id="selectedProductsCount">0</span> products
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button onclick="closeProductSelector()" class="secondary">Cancel</button>
+                    <button onclick="applyProductSelection()">Apply Selection</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    // Store reference to the offer element
+    modal.dataset.targetOffer = offerElement.dataset.offerKey;
+    
+    // Get current product IDs (preserve order)
+    const offerKey = offerElement.dataset.offerKey;
+    const currentProductIds = offerProductOrder.get(offerKey) || 
+        offerElement.querySelector('.offer-products').value
+            .split(',')
+            .map(id => id.trim())
+            .filter(id => id);
+    
+    // Show modal
+    modal.classList.add('active');
+    document.body.classList.add('modal-open');
+    
+    // Load and display products
+    renderProductSelectorGrid(currentProductIds);
+}
+
+// ======== RENDER PRODUCT SELECTOR GRID ========
+
+async function renderProductSelectorGrid(selectedProductIds = []) {
+    const grid = document.getElementById('productSelectorGrid');
+    
+    // Load products if not cached
+    if (offersAvailableProducts.length === 0) {
+        grid.innerHTML = '<div class="loading-spinner"></div>';
+        await loadAvailableProducts();
+    }
+    
+    if (offersAvailableProducts.length === 0) {
+        grid.innerHTML = '<div class="no-products">No products available. Please create products first.</div>';
+        return;
+    }
+    
+    // Render product grid with tooltips for full product names
+    grid.innerHTML = offersAvailableProducts.map(product => {
+        const isSelected = selectedProductIds.includes(product.id);
+        const price = product.lowest_price ? `$${(product.lowest_price / 100).toFixed(2)}` : 'No price';
+        const imageUrl = product.images && product.images.length > 0 ? product.images[0] : '';
+        const isActive = product.active !== false;
+        
+        return `
+            <div class="product-selector-item ${isSelected ? 'selected' : ''} ${!isActive ? 'inactive' : ''}" 
+                 data-product-id="${product.id}"
+                 data-product-name="${escapeHtml(product.name.toLowerCase())}"
+                 title="${escapeHtml(product.name)} - ${price}"
+                 onclick="toggleProductSelection('${product.id}')">
+                ${imageUrl ? 
+                    `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(product.name)}">` : 
+                    '<div class="no-image"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></div>'
+                }
+                <div class="product-info">
+                    <div class="product-name">${escapeHtml(product.name)}</div>
+                    <div class="product-price">${price}</div>
+                    ${!isActive ? '<div class="product-status">Inactive</div>' : ''}
+                </div>
+                ${isSelected ? '<div class="selected-badge">✓ Selected</div>' : ''}
+            </div>
+        `;
+    }).join('');
+    
+    updateSelectedCount();
+}
+
+// ======== TOGGLE PRODUCT SELECTION ========
+
+function toggleProductSelection(productId) {
+    const item = document.querySelector(`[data-product-id="${productId}"]`);
+    if (!item) return;
+    
+    item.classList.toggle('selected');
+    
+    // Update badge
+    const badge = item.querySelector('.selected-badge');
+    if (item.classList.contains('selected')) {
+        if (!badge) {
+            const newBadge = document.createElement('div');
+            newBadge.className = 'selected-badge';
+            newBadge.textContent = '✓ Selected';
+            item.appendChild(newBadge);
+        }
+    } else {
+        if (badge) badge.remove();
+    }
+    
+    updateSelectedCount();
+}
+
+// ======== UPDATE SELECTED COUNT ========
+
+function updateSelectedCount() {
+    const selectedItems = document.querySelectorAll('.product-selector-item.selected');
+    const countSpan = document.getElementById('selectedProductsCount');
+    if (countSpan) {
+        countSpan.textContent = selectedItems.length;
+    }
+}
+
+// ======== FILTER PRODUCTS IN SELECTOR ========
+
+function filterProductSelector() {
+    const searchInput = document.getElementById('productSearchInput');
+    const searchTerm = searchInput.value.toLowerCase();
+    const items = document.querySelectorAll('.product-selector-item');
+    
+    items.forEach(item => {
+        const productName = item.dataset.productName || '';
+        const productId = item.dataset.productId || '';
+        const matches = productName.includes(searchTerm) || productId.toLowerCase().includes(searchTerm);
+        item.style.display = matches ? '' : 'none';
+    });
+}
+
+// ======== APPLY PRODUCT SELECTION WITH ORDERING ========
+
+function applyProductSelection() {
+    const modal = document.getElementById('productSelectorModal');
+    const offerKey = modal.dataset.targetOffer;
+    const offerElement = document.querySelector(`[data-offer-key="${offerKey}"]`);
+    
+    if (!offerElement) {
+        closeProductSelector();
+        return;
+    }
+    
+    // Get selected product IDs
+    const selectedItems = document.querySelectorAll('.product-selector-item.selected');
+    const selectedProductIds = Array.from(selectedItems).map(item => item.dataset.productId);
+    
+    // Initialize or get existing order
+    if (!offerProductOrder.has(offerKey)) {
+        offerProductOrder.set(offerKey, []);
+    }
+    
+    const existingOrder = offerProductOrder.get(offerKey);
+    const newOrder = [];
+    
+    // Preserve existing order for products that are still selected
+    existingOrder.forEach(id => {
+        if (selectedProductIds.includes(id)) {
+            newOrder.push(id);
+        }
+    });
+    
+    // Add newly selected products at the end
+    selectedProductIds.forEach(id => {
+        if (!newOrder.includes(id)) {
+            newOrder.push(id);
+        }
+    });
+    
+    // Update order
+    offerProductOrder.set(offerKey, newOrder);
+    
+    // Update the products input field
+    const productsInput = offerElement.querySelector('.offer-products');
+    productsInput.value = newOrder.join(', ');
+    
+    // Update product display
+    updateOfferProductDisplay(offerElement, newOrder);
+    
+    closeProductSelector();
+    setMsg('offersMsg', `Selected ${newOrder.length} product(s) for offer. Use ↑↓ to reorder.`, 'success');
+}
+
+// ======== UPDATE OFFER PRODUCT DISPLAY WITH ORDERING ========
+
+function updateOfferProductDisplay(offerElement, productIds) {
+    const offerKey = offerElement.dataset.offerKey;
+    
+    // Initialize order if not exists
+    if (!offerProductOrder.has(offerKey)) {
+        offerProductOrder.set(offerKey, [...productIds]);
+    }
+    
+    // Get ordered product IDs
+    const orderedIds = offerProductOrder.get(offerKey);
+    
+    // Find or create product display area
+    let displayArea = offerElement.querySelector('.offer-products-display');
+    if (!displayArea) {
+        displayArea = document.createElement('div');
+        displayArea.className = 'offer-products-display';
+        const productsInput = offerElement.querySelector('.offer-products');
+        productsInput.parentNode.insertBefore(displayArea, productsInput.nextSibling);
+    }
+    
+    if (orderedIds.length === 0) {
+        displayArea.innerHTML = '<div class="no-products-selected">No products selected</div>';
+        return;
+    }
+    
+    // Display selected products with order badges and controls
+    const selectedProducts = orderedIds
+        .map(id => offersAvailableProducts.find(p => p.id === id))
+        .filter(p => p); // Remove any null/undefined
+    
+    displayArea.innerHTML = `
+        <div class="selected-products-ordered">
+            ${selectedProducts.map((p, index) => {
+                const imageUrl = p.images && p.images[0] ? p.images[0] : '';
+                const price = p.lowest_price ? `$${(p.lowest_price / 100).toFixed(2)}` : 'No price';
+                return `
+                    <div class="product-ordered-item" data-product-id="${p.id}" data-order="${index + 1}">
+                        <div class="product-order-badge">${index + 1}</div>
+                        <div class="product-ordered-content">
+                            ${imageUrl ? 
+                                `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(p.name)}">` :
+                                '<div class="no-image-mini">No Image</div>'
+                            }
+                            <div class="product-ordered-info">
+                                <span class="product-ordered-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+                                <span class="product-ordered-price">${price}</span>
+                            </div>
+                        </div>
+                        <div class="product-order-controls">
+                            <button type="button" class="order-btn order-up" 
+                                    onclick="moveProductUp('${offerKey}', '${p.id}')"
+                                    ${index === 0 ? 'disabled' : ''}
+                                    title="Move up">
+                                ↑
+                            </button>
+                            <button type="button" class="order-btn order-down" 
+                                    onclick="moveProductDown('${offerKey}', '${p.id}')"
+                                    ${index === selectedProducts.length - 1 ? 'disabled' : ''}
+                                    title="Move down">
+                                ↓
+                            </button>
+                            <button type="button" class="order-btn order-remove" 
+                                    onclick="removeProductFromOffer('${offerKey}', '${p.id}')"
+                                    title="Remove">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+        <div class="product-order-hint">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 16v-4"></path>
+                <path d="M12 8h.01"></path>
+            </svg>
+            Products are shown in order on landing pages. Use ↑↓ to reorder.
+        </div>
+    `;
+    
+    // Update the hidden input with ordered IDs
+    const productsInput = offerElement.querySelector('.offer-products');
+    productsInput.value = orderedIds.join(', ');
+}
+
+// ======== MOVE PRODUCT UP ========
+
+function moveProductUp(offerKey, productId) {
+    const order = offerProductOrder.get(offerKey);
+    if (!order) return;
+    
+    const index = order.indexOf(productId);
+    if (index <= 0) return; // Already at top or not found
+    
+    // Swap with previous
+    [order[index - 1], order[index]] = [order[index], order[index - 1]];
+    
+    // Update display
+    const offerElement = document.querySelector(`[data-offer-key="${offerKey}"]`);
+    if (offerElement) {
+        updateOfferProductDisplay(offerElement, order);
+        setMsg('offersMsg', 'Product order updated. Remember to click "Save Offers" to persist changes.', 'info');
+    }
+}
+
+// ======== MOVE PRODUCT DOWN ========
+
+function moveProductDown(offerKey, productId) {
+    const order = offerProductOrder.get(offerKey);
+    if (!order) return;
+    
+    const index = order.indexOf(productId);
+    if (index === -1 || index >= order.length - 1) return; // Already at bottom or not found
+    
+    // Swap with next
+    [order[index], order[index + 1]] = [order[index + 1], order[index]];
+    
+    // Update display
+    const offerElement = document.querySelector(`[data-offer-key="${offerKey}"]`);
+    if (offerElement) {
+        updateOfferProductDisplay(offerElement, order);
+        setMsg('offersMsg', 'Product order updated. Remember to click "Save Offers" to persist changes.', 'info');
+    }
+}
+
+// ======== REMOVE PRODUCT FROM OFFER ========
+
+function removeProductFromOffer(offerKey, productId) {
+    const order = offerProductOrder.get(offerKey);
+    if (!order) return;
+    
+    const index = order.indexOf(productId);
+    if (index === -1) return;
+    
+    // Remove from order
+    order.splice(index, 1);
+    
+    // Update display
+    const offerElement = document.querySelector(`[data-offer-key="${offerKey}"]`);
+    if (offerElement) {
+        updateOfferProductDisplay(offerElement, order);
+        
+        // Also deselect in modal if it's open
+        const modal = document.getElementById('productSelectorModal');
+        if (modal && modal.classList.contains('active')) {
+            const item = modal.querySelector(`[data-product-id="${productId}"]`);
+            if (item) {
+                item.classList.remove('selected');
+                const badge = item.querySelector('.selected-badge');
+                if (badge) badge.remove();
+                updateSelectedCount();
+            }
+        }
+        
+        setMsg('offersMsg', 'Product removed. Remember to click "Save Offers" to persist changes.', 'info');
+    }
+}
+
+// ======== CLOSE PRODUCT SELECTOR ========
+
+function closeProductSelector() {
+    const modal = document.getElementById('productSelectorModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.classList.remove('modal-open');
+    }
+}
+
+// ======== CREATE OFFER ELEMENT (ENHANCED) ========
+
+function createOfferElement(key, offer) {
+    const div = document.createElement('div');
+    div.className = 'offer-item';
+    div.dataset.offerKey = key;
+    
+    // Initialize product order
+    if (offer.product_ids && offer.product_ids.length > 0) {
+        offerProductOrder.set(key, [...offer.product_ids]);
+    }
+    
+    // Format full URL
+    const fullUrl = offer.full_url || 
+                    (currentOfferData.base_url ? `${currentOfferData.base_url}${offer.path || key}/` : '');
+    
+    div.innerHTML = `
+        <div class="offer-header">
+            <div class="offer-key">${escapeHtml(key)}</div>
+            <button class="small danger" onclick="removeOffer('${escapeHtml(key)}')">Remove</button>
+        </div>
+        <label>Path</label>
+        <input class="offer-path mono" value="${escapeHtml(offer.path || key)}" placeholder="e.g., summer-sale" />
+        
+        <label>Products</label>
+        <button class="small secondary select-products-btn" onclick="openProductSelector(this.closest('.offer-item'))">
+            Select Products Visually
+        </button>
+        <div class="offer-products-display"></div>
+        <input class="offer-products mono" value="${escapeHtml((offer.product_ids || []).join(', '))}" 
+               placeholder="Product IDs will appear here" style="margin-top: 8px;" />
+        
+        <div class="row mt8">
+            <label style="margin:0; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" class="offer-active" ${offer.active ? 'checked' : ''} style="width:auto" />
+                Active
+            </label>
+        </div>
+        ${fullUrl ? `
+            <div class="muted mt8" style="font-size:11px; word-break: break-all;">
+                <strong>URL:</strong> <a href="${escapeHtml(fullUrl)}" target="_blank" rel="noopener">${escapeHtml(fullUrl)}</a>
+            </div>
+        ` : ''}
+    `;
+    
+    // Load product display if products exist
+    if (offer.product_ids && offer.product_ids.length > 0) {
+        setTimeout(() => updateOfferProductDisplay(div, offer.product_ids), 100);
+    }
+    
+    return div;
+}
+
+// ======== ADD OFFER TO DOM ========
+
+function addOfferToDOM(key = '', offer = {}) {
+    const container = document.getElementById('offersContainer');
+    
+    // Remove "no offers" message if it exists
+    const noOffersMsg = container.querySelector('.no-orders');
+    if (noOffersMsg) {
+        noOffersMsg.remove();
+    }
+    
+    const offerElement = createOfferElement(key, offer);
+    container.appendChild(offerElement);
+    
+    // If this is a new offer (no key), make the key editable
+    if (!key) {
+        const keySpan = offerElement.querySelector('.offer-key');
+        keySpan.contentEditable = true;
+        keySpan.classList.add('editable');
+        keySpan.focus();
+        
+        // Add placeholder text
+        if (!keySpan.textContent.trim()) {
+            keySpan.textContent = 'new-offer';
+            keySpan.style.color = '#999';
+        }
+        
+        // Clear placeholder on focus
+        keySpan.addEventListener('focus', function() {
+            if (this.textContent === 'new-offer') {
+                this.textContent = '';
+                this.style.color = '';
+            }
+        });
+        
+        // Restore placeholder if empty on blur
+        keySpan.addEventListener('blur', function() {
+            if (!this.textContent.trim()) {
+                this.textContent = 'new-offer';
+                this.style.color = '#999';
+            }
+        });
+    }
+}
+
+// ======== REMOVE OFFER ========
+
+function removeOffer(key) {
+    if (!confirm(`Remove offer "${key}"? This will not delete it from the server until you click Save.`)) {
+        return;
+    }
+    
+    const element = document.querySelector(`[data-offer-key="${key}"]`);
+    if (element) {
+        element.remove();
+        // Clear from order tracking
+        offerProductOrder.delete(key);
+        setMsg('offersMsg', `Offer "${key}" removed. Click "Save Offers" to persist changes.`, 'info');
+        
+        // Show "no offers" message if container is empty
+        const container = document.getElementById('offersContainer');
+        if (container && container.children.length === 0) {
+            container.innerHTML = '<div class="no-orders">No offers configured. Click "+ Add Offer" to create one.</div>';
+        }
+    }
+}
+
+// ======== ADD NEW OFFER ========
+
+function handleAddOffer() {
+    const container = document.getElementById('offersContainer');
+    
+    // Check if there's already an unsaved new offer
+    const existingNew = container.querySelector('.offer-key.editable');
+    if (existingNew) {
+        existingNew.focus();
+        setMsg('offersMsg', 'Please complete the existing offer first', 'error');
+        return;
+    }
+    
+    // Add new blank offer
+    addOfferToDOM('', { 
+        path: '', 
+        product_ids: [], 
+        active: true 
+    });
+    
+    setMsg('offersMsg', 'New offer added. Enter a name and click "Save Offers" to persist.', 'info');
+}
+
+// ======== REFRESH/RELOAD OFFERS ========
+
+async function handleRefreshOffers() {
+    const clientID = window.currentClientID ? window.currentClientID() : null;
+    if (!clientID) {
+        setMsg('offersMsg', 'No client ID available', 'error');
+        return;
+    }
+    
+    currentOfferData = {}; // Clear cache to force reload
+    offersAvailableProducts = []; // Clear products cache
+    offerProductOrder.clear(); // Clear order tracking
+    await loadOffers(clientID);
+}
+
+// ======== SAVE OFFERS ========
+
+async function handleSaveOffers() {
+    try {
+        const clientID = window.currentClientID ? window.currentClientID() : null;
+        if (!clientID) {
+            return setMsg('offersMsg', 'Client ID is required. Please sign in.', 'error');
+        }
+        
+        // Check if baseFrontendUrl field exists (it might not be in the DOM)
+        const baseFrontendUrlField = document.getElementById('baseFrontendUrl');
+        const baseFrontendUrl = baseFrontendUrlField ? baseFrontendUrlField.value.trim() : '';
+        
+        const offerElements = document.querySelectorAll('.offer-item');
+        if (offerElements.length === 0) {
+            return setMsg('offersMsg', 'No offers to save', 'error');
+        }
+        
+        let savedCount = 0;
+        let errorCount = 0;
+        setMsg('offersMsg', 'Saving offers...', 'info');
+        
+        for (const element of offerElements) {
+            const keyElement = element.querySelector('.offer-key');
+            let offerName = keyElement.textContent.trim();
+            
+            // Skip if offer name is placeholder or empty
+            if (!offerName || offerName === 'new-offer') {
+                setMsg('offersMsg', 'Please provide a name for all offers', 'error');
+                keyElement.focus();
+                return;
+            }
+            
+            // Store original name for user feedback
+            const originalName = offerName;
+            
+            // Sanitize offer name (replace spaces and special chars with hyphens)
+            offerName = offerName.toLowerCase()
+                .trim()
+                .replace(/\s+/g, '-')  // Replace spaces with hyphens
+                .replace(/[^a-z0-9-_]/g, '-')  // Replace other special chars
+                .replace(/-+/g, '-')  // Replace multiple hyphens with single
+                .replace(/^-|-$/g, '');  // Remove leading/trailing hyphens
+            
+            // Update the display if name was changed
+            if (originalName !== offerName && !keyElement.contentEditable) {
+                keyElement.textContent = offerName;
+                keyElement.setAttribute('data-original-name', originalName);
+                keyElement.title = `Original: "${originalName}"`;
+                
+                // Show feedback about the name change
+                setMsg('offersMsg', `Note: Offer name "${originalName}" was sanitized to "${offerName}"`, 'info');
+            }
+            
+            const path = element.querySelector('.offer-path').value.trim() || offerName;
+            
+            // Get ordered product IDs
+            const offerKey = element.dataset.offerKey;
+            const orderedProductIds = offerProductOrder.get(offerKey) || 
+                element.querySelector('.offer-products').value.trim().split(',').map(id => id.trim()).filter(id => id);
+            
+            const active = element.querySelector('.offer-active').checked;
+            
+            const offerPayload = {
+                action: "update_offer",
+                offer_name: offerName,
+                path: path,
+                product_ids: orderedProductIds, // Use ordered IDs
+                active: active,
+                clientID: clientID
+            };
+            
+            // Include base_frontend_url on first offer only if it exists
+            if (savedCount === 0 && baseFrontendUrl) {
+                offerPayload.base_frontend_url = baseFrontendUrl;
+            }
+            
+            try {
+                const res = await authedFetch(`/`, { 
+                    method: 'POST', 
+                    body: offerPayload 
+                });
+                
+                if (!res.ok) {
+                    const errorMsg = res.body?.error || `HTTP ${res.status}`;
+                    setMsg('offersMsg', `Failed to save offer "${offerName}": ${errorMsg}`, 'error');
+                    errorCount++;
+                    console.error('Save offer error:', res);
+                } else {
+                    savedCount++;
+                }
+                
+            } catch (fetchError) {
+                setMsg('offersMsg', `Network error saving "${offerName}": ${fetchError.message}`, 'error');
+                errorCount++;
+                console.error('Network error:', fetchError);
+            }
+        }
+        
+        if (errorCount === 0) {
+            setMsg('offersMsg', `✓ Successfully saved ${savedCount} offer(s)!`, 'success');
+            
+            // Reload offers to show updated data
+            setTimeout(() => {
+                currentOfferData = {}; // Clear cache
+                offersAvailableProducts = []; // Clear products cache
+                loadOffers(clientID);
+            }, 1000);
+        } else {
+            setMsg('offersMsg', `Saved ${savedCount} offer(s), ${errorCount} failed`, 'error');
+        }
+        
+    } catch (error) {
+        console.error('Save offers error:', error);
+        setMsg('offersMsg', `Error: ${error.message}`, 'error');
+    }
+}
+
+// ======== EVENT LISTENERS ========
+
+function setupOffersListeners() {
+    const btnAddOffer = document.getElementById('btnAddOffer');
+    const btnRefreshOffers = document.getElementById('btnRefreshOffers');
+    const btnSaveOffers = document.getElementById('btnSaveOffers');
+    
+    if (btnAddOffer) {
+        btnAddOffer.addEventListener('click', handleAddOffer);
+    }
+    
+    if (btnRefreshOffers) {
+        btnRefreshOffers.addEventListener('click', handleRefreshOffers);
+    }
+    
+    if (btnSaveOffers) {
+        btnSaveOffers.addEventListener('click', handleSaveOffers);
+    }
+    
+    console.log('Offers listeners setup complete');
+}
+
+// ======== CSS STYLES ========
+
+const offerSelectorStyles = `
+/* ===== Product Ordering in Offers ===== */
+
+.selected-products-ordered {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: #0b1426;
+    border: 1px solid #2a3f5f;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.product-ordered-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #0f1a2e;
+    border: 1px solid #2a3f5f;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.product-ordered-item:hover {
+    border-color: #4a7ba7;
+    background: rgba(74, 123, 167, 0.05);
+}
+
+.product-order-badge {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--brand);
+    color: #0b1220;
+    font-weight: 700;
+    font-size: 0.875rem;
+    border-radius: 50%;
+}
+
+.product-ordered-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0; /* Enable text truncation */
+}
+
+.product-ordered-content img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.product-ordered-content .no-image-mini {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a2742;
+    border-radius: 4px;
+    color: #6b7280;
+    font-size: 0.625rem;
+    flex-shrink: 0;
+}
+
+.product-ordered-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0; /* Enable text truncation */
+}
+
+.product-ordered-name {
+    font-weight: 600;
+    color: #e8eefc;
+    font-size: 0.875rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.product-ordered-price {
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.product-order-controls {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.order-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a2742;
+    border: 1px solid #2a3f5f;
+    border-radius: 4px;
+    color: #e8eefc;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.order-btn:hover:not(:disabled) {
+    background: #2a3f5f;
+    border-color: var(--brand);
+    color: var(--brand);
+}
+
+.order-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.order-btn.order-remove {
+    color: var(--danger);
+}
+
+.order-btn.order-remove:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--danger);
+}
+
+.product-order-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(106, 168, 255, 0.1);
+    border: 1px solid rgba(106, 168, 255, 0.3);
+    border-radius: 4px;
+    color: #9ca3af;
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.product-order-hint svg {
+    flex-shrink: 0;
+    color: var(--brand);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .product-ordered-item {
+        flex-wrap: wrap;
+    }
+    
+    .product-order-controls {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .product-ordered-name {
+        white-space: normal;
+        overflow: visible;
+    }
+}
+
+/* ===== Landing Page Editor Enhancements ===== */
+
+/* Collapsible form panel for better preview */
+.landing-page-editor {
+    transition: grid-template-columns 0.3s ease;
+}
+
+.landing-page-editor.preview-only {
+    grid-template-columns: 0 1fr;
+}
+
+.landing-page-editor.preview-only .editor-form {
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+    width: 0;
+    min-width: 0;
+}
+
+.preview-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--brand);
+    border: none;
+    border-radius: 6px;
+    color: #0b1220;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.preview-toggle-btn:hover {
+    background: #5a98f0;
+    transform: translateY(-1px);
+}
+
+.preview-toggle-btn svg {
+    flex-shrink: 0;
+}
+
+/* Update preview header to include toggle button */
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #0f1a2e;
+    border: 1px solid #2a3f5f;
+    border-radius: 8px 8px 0 0;
+    gap: 12px;
+}
+
+.preview-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.preview-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #e8eefc;
+}
+
+/* Responsive adjustments for preview toggle */
+@media (max-width: 1200px) {
+    .landing-page-editor.preview-only {
+        grid-template-columns: 1fr;
+    }
+    
+    .preview-toggle-btn {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+    }
+    
+    .preview-toggle-btn span {
+        display: none;
+    }
+}
+    
+/* Product Selector Modal Styles */
+.product-selector-search {
+    margin-bottom: 16px;
+}
+
+.product-selector-search input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #2a3f5f;
+    border-radius: 8px;
+    background: #0b1426;
+    color: #e8eefc;
+    font-size: 14px;
+}
+
+.product-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    max-height: 450px;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid #2a3f5f;
+    border-radius: 8px;
+    background: #0b1426;
+}
+
+.product-selector-item {
+    position: relative;
+    border: 2px solid #2a3f5f;
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #0f1a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+/* Enhanced tooltip for product selector items */
+.product-selector-item[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    font-size: 0.875rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 8px;
+    pointer-events: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.product-selector-item[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid rgba(0, 0, 0, 0.9);
+    margin-bottom: 2px;
+    z-index: 1001;
+}
+
+.product-selector-item:hover {
+    border-color: #4a7ba7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.product-selector-item.selected {
+    border-color: var(--accent);
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.product-selector-item.inactive {
+    opacity: 0.6;
+}
+
+.product-selector-item img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.product-selector-item .no-image {
+    width: 100%;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a2742;
+    border-radius: 6px;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.product-selector-item .product-info {
+    width: 100%;
+}
+
+.product-selector-item .product-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #e8eefc;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.product-selector-item .product-price {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.product-selector-item .product-status {
+    font-size: 0.75rem;
+    color: #ff6b6b;
+    margin-top: 4px;
+}
+
+.selected-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: var(--accent);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.selected-products-summary {
+    margin-top: 16px;
+    padding: 12px;
+    background: #0b1426;
+    border: 1px solid #2a3f5f;
+    border-radius: 8px;
+}
+
+/* Mini Product Display in Offers */
+.offer-products-display {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.selected-products-mini {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    background: #0b1426;
+    border: 1px solid #2a3f5f;
+    border-radius: 6px;
+}
+
+.product-mini {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: #0f1a2e;
+    border: 1px solid #2a3f5f;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    cursor: help;
+    transition: all 0.2s;
+}
+
+.product-mini:hover {
+    border-color: #4a7ba7;
+    background: rgba(74, 123, 167, 0.1);
+}
+
+.product-mini img {
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
+    border-radius: 3px;
+}
+
+.product-mini .no-image-mini {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a2742;
+    border-radius: 3px;
+    color: #6b7280;
+    font-size: 0.6rem;
+}
+
+.no-products-selected {
+    padding: 12px;
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.select-products-btn {
+    margin-top: 4px;
+}
+
+/* Offer item enhancements */
+.offer-item {
+    background: var(--card-bg);
+    border: 1px solid #2a3f5f;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.offer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #2a3f5f;
+}
+
+.offer-key {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #e8eefc;
+    position: relative;
+}
+
+.offer-key[data-original-name]::after {
+    content: ' (sanitized)';
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-weight: normal;
+}
+
+.offer-key.editable {
+    padding: 4px 8px;
+    border: 1px solid var(--brand);
+    border-radius: 4px;
+    background: rgba(255, 131, 9, 0.1);
+}
+`;
+
+// ======== INITIALIZATION ========
+
+// Inject styles
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        const style = document.createElement('style');
+        style.textContent = offerSelectorStyles;
+        document.head.appendChild(style);
+    });
+} else {
+    const style = document.createElement('style');
+    style.textContent = offerSelectorStyles;
+    document.head.appendChild(style);
+}
+
+// Auto-load when switching to offers tab
+document.addEventListener('DOMContentLoaded', () => {
+    const offersTab = document.querySelector('[data-tab="offers"]');
+    if (offersTab) {
+        offersTab.addEventListener('click', () => {
+            // Small delay to ensure tab is active
+            setTimeout(() => {
+                initOffersTab();
+                // Pre-load products when tab is opened
+                if (offersAvailableProducts.length === 0) {
+                    loadAvailableProducts();
+                }
+            }, 100);
+        });
+    }
+});
+
+// Export functions
+window.loadOffers = loadOffers;
+window.removeOffer = removeOffer;
+window.handleAddOffer = handleAddOffer;
+window.handleRefreshOffers = handleRefreshOffers;
+window.handleSaveOffers = handleSaveOffers;
+window.openProductSelector = openProductSelector;
+window.closeProductSelector = closeProductSelector;
+window.toggleProductSelection = toggleProductSelection;
+window.applyProductSelection = applyProductSelection;
+window.filterProductSelector = filterProductSelector;
+window.setupOffersListeners = setupOffersListeners;
+window.initOffersTab = initOffersTab;
+window.moveProductUp = moveProductUp;
+window.moveProductDown = moveProductDown;
+window.removeProductFromOffer = removeProductFromOffer;
+
+// Setup listeners if DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupOffersListeners);
+} else {
+    setupOffersListeners();
+}

@@ -1,0 +1,589 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  stripe-cart-stack - Refactored with centralized configuration and strict env-driven 
+  backend (dev/prod), composite Orders key, /admin routes, Python 3.11
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, prod]
+  StripeKmsKeyArn:
+    Type: String
+    Description: KMS key ARN used to encrypt/decrypt tenant secrets (e.g., Stripe)
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 30
+    MemorySize: 512
+    Architectures: [x86_64]
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+    Tracing: Active
+    CodeUri: src/
+
+  Api:
+    TracingEnabled: true
+    Cors:
+      AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE'"
+      AllowHeaders: >-
+        'Content-Type, Authorization, stripe-signature, Stripe-Signature, X-Client-Id,
+        X-Offer-Name, X-Amz-Date, X-Api-Key, X-Amz-Security-Token'
+      AllowOrigin: "'*'"
+      MaxAge: "'600'"
+
+Resources:
+  ############################################################
+  # API
+  ############################################################
+  RestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+
+  ############################################################
+  # OPTIONAL: Shipping layer (compatible with 3.11)
+  ############################################################
+  ShippingProvidersLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "shipping-providers-${Environment}"
+      Description: Third-party libs (e.g., requests) and shared shipping code
+      ContentUri: layers/shipping/
+      CompatibleRuntimes: [python3.11]
+      RetentionPolicy: Retain
+
+  ############################################################
+  # DynamoDB Tables (per-environment names)
+  ############################################################
+  AppConfigTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "app-config-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: config_key, AttributeType: S }
+        - { AttributeName: environment, AttributeType: S }
+      KeySchema:
+        - { AttributeName: config_key, KeyType: HASH }
+        - { AttributeName: environment,  KeyType: RANGE }
+
+  StripeKeysTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "stripe-keys-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: clientID, AttributeType: S }
+      KeySchema:
+        - { AttributeName: clientID, KeyType: HASH }
+
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "orders-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: clientID, AttributeType: S }
+        - { AttributeName: order_id, AttributeType: S }
+        - { AttributeName: created_at, AttributeType: S }
+        - { AttributeName: fulfilled_created_at, AttributeType: S }
+      KeySchema:
+        - { AttributeName: clientID, KeyType: HASH }
+        - { AttributeName: order_id, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: client-created-index
+          KeySchema:
+            - { AttributeName: clientID, KeyType: HASH }
+            - { AttributeName: created_at, KeyType: RANGE }
+          Projection:
+            ProjectionType: INCLUDE
+            NonKeyAttributes: [ amount_total, currency, status ]
+        - IndexName: client-fulfilled-created-index
+          KeySchema:
+            - { AttributeName: clientID, KeyType: HASH }
+            - { AttributeName: fulfilled_created_at, KeyType: RANGE }
+          Projection:
+            ProjectionType: KEYS_ONLY
+
+  CustomersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "customers-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: clientID, AttributeType: S }
+        - { AttributeName: customer_id, AttributeType: S }
+      KeySchema:
+        - { AttributeName: clientID, KeyType: HASH }
+        - { AttributeName: customer_id, KeyType: RANGE }
+
+  ############################################################
+  # Lambdas (strict env, /admin routes)
+  ############################################################
+
+  ConfigApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: config_api.lambda_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AppConfigTable
+      Environment:
+        Variables:
+          APP_CONFIG_TABLE: !Ref AppConfigTable
+      Events:
+        PublicConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /config
+            Method: GET
+        AdminGetAppConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/app-config
+            Method: GET
+        AdminPutAppConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/app-config
+            Method: PUT
+
+  AdminKeysFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: admin_keys.lambda_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref StripeKeysTable
+        - KMSDecryptPolicy:
+            KeyId: !Ref StripeKmsKeyArn
+        - Statement:
+            Effect: Allow
+            Action: kms:Encrypt
+            Resource: !Ref StripeKmsKeyArn
+      Environment:
+        Variables:
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+      Events:
+        AdminStripeKeysGET:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/stripe-keys
+            Method: GET
+        AdminStripeKeysPUT:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/stripe-keys
+            Method: PUT
+
+  AdminVerifyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: admin_verify.lambda_handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: !GetAtt StripeKeysTable.Arn
+            - Effect: Allow
+              Action:
+                - kms:Decrypt
+              Resource: !Ref StripeKmsKeyArn
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: !GetAtt AppConfigTable.Arn
+      Environment:
+        Variables:
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+      Events:
+        AdminVerifyGET:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/verify
+            Method: GET
+        AdminVerifyPOST:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/verify
+            Method: POST
+
+  TenantConfigFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: tenant_config.lambda_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref StripeKeysTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref AppConfigTable
+        - Statement:
+            Effect: Allow
+            Action: [ kms:Encrypt, kms:Decrypt ]
+            Resource: !Ref StripeKmsKeyArn
+      Environment:
+        Variables:
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          APP_CONFIG_TABLE: !Ref AppConfigTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+      Events:
+        AdminTenantConfigGET:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/tenant-config
+            Method: GET
+        AdminTenantConfigPUT:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/tenant-config
+            Method: PUT
+        PublicTenantConfigGET:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /public/tenant-config
+            Method: GET
+
+  LandingPagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: landing_pages.lambda_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref StripeKeysTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref AppConfigTable
+      Environment:
+        Variables:
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          APP_CONFIG_TABLE: !Ref AppConfigTable
+      Events:
+        AdminLandingPagesGET:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/landing-pages
+            Method: GET
+        AdminLandingPagesPOST:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/landing-pages
+            Method: POST
+        AdminLandingPageDetailGET:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/landing-pages/{id}
+            Method: GET
+        AdminLandingPageDetailPUT:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/landing-pages/{id}
+            Method: PUT
+        AdminLandingPageDetailDELETE:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/landing-pages/{id}
+            Method: DELETE
+
+  PageGeneratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda_page_generator.lambda_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref StripeKeysTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref AppConfigTable
+        - Statement:
+            Effect: Allow
+            Action: [ s3:PutObject, s3:PutObjectAcl ]
+            Resource:
+              - !Sub "arn:aws:s3:::landing-pages-preview-${Environment}-${AWS::AccountId}/*"
+              - !Sub "arn:aws:s3:::landing-pages-${Environment}-${AWS::AccountId}/*"
+        - Statement:
+            Effect: Allow
+            Action: cloudfront:CreateInvalidation
+            Resource: "*"
+      Environment:
+        Variables:
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          APP_CONFIG_TABLE: !Ref AppConfigTable
+      Events:
+        AdminLPGeneratePOST:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/landing-pages/generate
+            Method: POST
+        AdminLPPreviewPOST:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/landing-pages/preview/{id}
+            Method: POST
+        AdminLPPublishPOST:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/landing-pages/publish/{id}
+            Method: POST
+
+  OrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: orders.lambda_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+      Events:
+        AdminOrdersGET:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/orders
+            Method: GET
+        AdminOrdersPOST:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/orders
+            Method: POST
+        AdminOrderDetailGET:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/orders/{order_id}
+            Method: GET
+        AdminOrderDetailPUT:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/orders/{order_id}
+            Method: PUT
+
+  StripeCartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: stripe_cart.lambda_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref StripeKeysTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref AppConfigTable
+        - KMSDecryptPolicy:
+            KeyId: !Ref StripeKmsKeyArn
+      Environment:
+        Variables:
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          APP_CONFIG_TABLE: !Ref AppConfigTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+      Events:
+        StripeWebhookPOST:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /webhook/{token}
+            Method: POST
+
+  ShippingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: shipping_api.lambda_handler
+      Layers:
+        - !Ref ShippingProvidersLayer
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref StripeKeysTable
+        - Statement:
+            Effect: Allow
+            Action: [ kms:Encrypt, kms:Decrypt ]
+            Resource: !Ref StripeKmsKeyArn
+      Environment:
+        Variables:
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+      Events:
+        AdminCreateLabel:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/create-label
+            Method: POST
+        AdminShippingGetCfg:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/shipping-config
+            Method: GET
+        AdminShippingPutCfg:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/shipping-config
+            Method: PUT
+        AdminTestShipping:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/test-shipping
+            Method: POST
+        AdminGetRates:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /admin/get-rates
+            Method: POST
+
+  ############################################################
+  # NEW: OffersFunction — adds /admin/offers (GET, PUT)
+  ############################################################
+  OffersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: offers.lambda_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AppConfigTable
+      Environment:
+        Variables:
+          APP_CONFIG_TABLE: !Ref AppConfigTable
+          ENVIRONMENT: !Ref Environment
+      Events:
+        AdminOffersGET:
+          Type: Api
+          Properties: { RestApiId: !Ref RestApi, Path: /admin/offers, Method: GET }
+        AdminOffersPUT:
+          Type: Api
+          Properties: { RestApiId: !Ref RestApi, Path: /admin/offers, Method: PUT }
+
+  ProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: products.lambda_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref StripeKeysTable
+        - KMSDecryptPolicy:
+            KeyId: !Ref StripeKmsKeyArn
+        - Statement:                    # <-- add this explicit statement
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:DescribeKey
+            Resource: !Ref StripeKmsKeyArn
+      Environment:
+        Variables:
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+          ENVIRONMENT: !Ref Environment
+      Events:
+        PublicPricesGET:
+          Type: Api
+          Properties: { RestApiId: !Ref RestApi, Path: /public/prices, Method: GET }
+        AdminProductsGET:
+          Type: Api
+          Properties: { RestApiId: !Ref RestApi, Path: /admin/products, Method: GET }
+        AdminProductsPUT:
+          Type: Api
+          Properties: { RestApiId: !Ref RestApi, Path: /admin/products, Method: PUT }
+
+  ############################################################
+  # OPTIONAL (TEMP): RPC Adapter for legacy "action" POSTs
+  # Uncomment to support old clients while you migrate.
+  ############################################################
+  # RpcAdapterFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: rpc_adapter.lambda_handler      # implement in src/rpc_adapter.py
+  #     Policies:
+  #       - DynamoDBCrudPolicy:
+  #           TableName: !Ref AppConfigTable
+  #       - DynamoDBReadPolicy:
+  #           TableName: !Ref StripeKeysTable
+  #     Environment:
+  #       Variables:
+  #         APP_CONFIG_TABLE: !Ref AppConfigTable
+  #         STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+  #     Events:
+  #       RpcPOST:
+  #         Type: Api
+  #         Properties:
+  #           RestApiId: !Ref RestApi
+  #           Path: /rpc
+  #           Method: POST
+
+  ############################################################
+  # Buckets referenced by page generator
+  ############################################################
+  LandingPagePreviewBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "landing-pages-preview-${Environment}-${AWS::AccountId}"
+
+  LandingPageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "landing-pages-${Environment}-${AWS::AccountId}"
+
+Outputs:
+  ApiBaseUrl:
+    Description: Base URL for this stage
+    Value: !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+
+  RestApiId:
+    Description: REST API ID
+    Value: !Ref RestApi
+
+  StageName:
+    Description: Deployed stage name
+    Value: !Ref Environment
+
+  ExecuteApiHost:
+    Description: execute-api host for this API
+    Value: !Sub "${RestApi}.execute-api.${AWS::Region}.amazonaws.com"
+
+  AppConfigTableName:
+    Description: App-config table name
+    Value: !Ref AppConfigTable
+
+  StripeKeysTableName:
+    Description: Stripe keys table name
+    Value: !Ref StripeKeysTable
+
+  OrdersTableName:
+    Description: Orders table name
+    Value: !Ref OrdersTable
+
+  CustomersTableName:
+    Description: Customers table name
+    Value: !Ref CustomersTable
+
+  LandingPagePreviewBucketName:
+    Description: Landing page preview bucket name
+    Value: !Ref LandingPagePreviewBucket
+
+  LandingPageBucketName:
+    Description: Landing page bucket name
+    Value: !Ref LandingPageBucket

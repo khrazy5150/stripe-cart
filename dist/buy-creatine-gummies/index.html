@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Creatine Gummies — Junior Bay</title>
+<link rel="icon" type="image/x-icon" href="https://images.juniorbay.com/icon/favicon.png">
+<meta name="theme-color" content="#0f172a">
+<style>
+  :root{
+    --bg:#0b1220;
+    --card:#0f172a;
+    --ink:#f8fafc;
+    --muted:#cbd5e1;
+    --brand:#22c55e;
+    --accent:#60a5fa;
+    --warning:#f59e0b;
+    --danger:#ef4444;
+    --ok:#10b981;
+    --ring:rgba(96,165,250,.35);
+    --shadow:0 12px 30px rgba(0,0,0,.35);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:#0b1220;color:var(--ink);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.35;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding-bottom:110px}
+  header{padding:16px 16px 0}
+  .brand{display:flex;align-items:center;gap:10px}
+  .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--brand),#4ade80)}
+  .brand h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:#a3e635;margin:0;opacity:.9}
+
+  .hero{margin:12px 16px;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow)}
+  .hero img{display:block;width:100%;height:auto}
+
+  .headline{padding:6px 16px 0}
+  .headline h2{font-size:26px;margin:10px 0 6px;line-height:1.1}
+  .headline p{margin:0;color:var(--muted);font-size:15px}
+
+  .trust{display:flex;gap:8px;flex-wrap:wrap;margin:12px 16px 0}
+  .chip{font-size:12px;color:#d1fae5;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);padding:8px 10px;border-radius:999px}
+
+  .cards{display:grid;gap:14px;margin:16px}
+  .card{
+    background:linear-gradient(180deg,#0f172a,#101827);
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:var(--radius); padding:14px; position:relative; box-shadow:var(--shadow)
+  }
+  /* smaller & thinner so name+badge fit in two lines */
+  .title{font-weight:600;font-size:15px;margin:2px 0 2px;line-height:1.2}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 6px}
+  .badge{
+    position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;
+    padding:5px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.15);
+    background:rgba(96,165,250,.18);color:#e0f2fe;max-width:48%;text-align:center
+  }
+  .badge.gold{background:rgba(245,158,11,.18); color:#fffbeb}
+  .badge.red{background:rgba(239,68,68,.18); color:#fee2e2}
+
+  .priceRow{display:flex;align-items:baseline;gap:8px;margin:8px 0 10px;flex-wrap:wrap}
+  .price{font-size:20px;font-weight:800}
+  .compare{font-size:12px;color:#94a3b8;text-decoration:line-through}
+  .per{font-size:11px;color:#a5b4fc;background:rgba(99,102,241,.14);border:1px solid rgba(99,102,241,.25);padding:3px 6px;border-radius:8px}
+  .savings{font-size:11px;color:#86efac;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.25);padding:3px 6px;border-radius:8px;margin-left:auto}
+
+  .radioRow{display:flex;gap:10px;align-items:center;margin-top:6px}
+  .radioRow input{accent-color:#22c55e;width:18px;height:18px}
+
+  .note{color:#94a3b8;font-size:12px;margin:0 16px}
+
+  .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);margin:16px}
+
+  .cta-sticky{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;background:linear-gradient(180deg,rgba(15,23,42,.3),#0b1220 20%);
+    border-top:1px solid rgba(255,255,255,.08);padding:12px 16px env(safe-area-inset-bottom)
+  }
+  .cta-inner{max-width:720px;margin:0 auto;text-align:center}
+  .cta-btn{
+    display:inline-block;
+    background:linear-gradient(135deg,#22c55e,#16a34a);
+    color:#052e16;border:none;border-radius:14px;padding:16px 18px;font-weight:900;font-size:16px;
+    box-shadow:0 8px 18px rgba(34,197,94,.35), inset 0 0 0 1px rgba(255,255,255,.25);
+    min-width:72%;
+  }
+  .cta-btn:disabled{opacity:.55;filter:grayscale(30%)}
+
+  .skeleton{animation:pulse 1.2s infinite ease-in-out;background:linear-gradient(90deg,#111827 25%,#1f2937 37%,#111827 63%);background-size:400% 100%}
+  .sk-card{height:120px;border-radius:var(--radius)}
+  @keyframes pulse{0%{background-position:100% 0}100%{background-position:0 0}}
+
+  /* Order button UX */
+  #orderBtn { cursor: pointer; }
+  /* Processing state should replace the gradient & remove disabled dimming */
+  #orderBtn.is-processing {
+    background: #ff8309 !important;         /* replace the gradient entirely */
+    background-image: none !important;       /* make 100% sure the gradient is gone */
+    color: #fff !important;
+    box-shadow: 0 8px 18px rgba(255,131,9,.35),
+                inset 0 0 0 1px rgba(255,255,255,.25) !important;
+    position: relative;
+    cursor: progress;
+  }
+
+  /* When disabled *and* processing, don't dim the button */
+  #orderBtn.is-processing:disabled {
+    opacity: 1 !important;
+    filter: none !important;
+  }
+
+  /* Inline spinner */
+  #orderBtn .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    vertical-align: -2px;
+    animation: spin 0.6s linear infinite;
+    margin-left: 8px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  details{background:#0f172a;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px 12px;margin:0 16px 10px}
+  summary{cursor:pointer;font-weight:700}
+  button,summary{touch-action:manipulation}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="dot"></span><h1>Creatine Gummies • Official</h1></div>
+  </header>
+
+  <div class="hero">
+    <img src="https://images.juniorbay.net/photos/0GpaFEj7gyu/small.avif" alt="Creatine Gummies" width="1200" height="800" loading="eager">
+  </div>
+
+  <section class="headline">
+    <h2>Get Creatine You'll Actually Love.</h2>
+    <p>Build power and recover faster with great-tasting gummies that fit in your gym bag, not your shaker. Pick a bundle & save more.</p>
+  </section>
+
+  <div class="trust">
+    <span class="chip">⚡ Fast Checkout</span>
+    <span class="chip">✔️ 30-Day Guarantee</span>
+    <span class="chip">🇺🇸 Ships from USA</span>
+  </div>
+
+  <p class="note" id="offerLabel">Loading offer…</p>
+
+  <div class="cards" id="cards">
+    <div class="card skeleton sk-card"></div>
+    <div class="card skeleton sk-card"></div>
+    <div class="card skeleton sk-card"></div>
+    <div class="card skeleton sk-card"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <details>
+    <summary>What are Creatine Gummies?</summary>
+    <p>Creatine Gummies are a chewable form of creatine monohydrate that deliver an effective daily dose—no mixing or chalky drinks. They help your muscles recycle ATP faster so you can lift heavier, sprint harder, and recover better from high-intensity training. Easy, portable, and great-tasting.</p>
+  </details>
+  <details>
+    <summary>How do I take it?</summary>
+    <p>Take the recommended daily serving on the label. Most customers feel noticeable benefits within 1-2 weeks.</p>
+  </details>
+  <details>
+    <summary>Is there a guarantee?</summary>
+    <p>Yes—try it for 30 days. If you don't love it, contact support for a hassle-free refund.</p>
+  </details>
+</div>
+
+<!-- Sticky centered CTA -->
+<div class="cta-sticky">
+  <div class="cta-inner">
+    <!-- <input 
+      type="email" 
+      id="customerEmail" 
+      class="email-input" 
+      placeholder="Enter your email for order updates"
+      required
+      autocomplete="email"
+    > -->
+    <button class="cta-btn order-btn" id="orderBtn" disabled>Select a package</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const cardsEl = $('#cards');
+  const orderBtn = $('#orderBtn');
+  const offerLabel = $('#offerLabel');
+  const emailInput = $('#customerEmail');
+
+  // URL-driven config; defaults to the values you provided
+  const url = new URL(location.href);
+  const clientID = url.searchParams.get('clientID') || 'd831c360-00e1-706a-6d3a-2a5361c20df6';
+  const offerKey = url.searchParams.get('offer') || 'creatine-gummies';
+  const baseUrl = url.searchParams.get('baseUrl') || 'https://checkout.juniorbay.com';
+  const api = `${baseUrl}/public/offer?clientID=${encodeURIComponent(clientID)}&offer=${encodeURIComponent(offerKey)}`;
+
+  const orderButtons = document.querySelectorAll('#orderBtn, .order-btn');
+
+  function setProcessing(btn) {
+    if (btn.classList.contains('is-processing')) return; // guard
+    btn.classList.add('is-processing');
+    btn.disabled = true;
+
+    // keep original label in case you ever need to restore it
+    btn.dataset.originalText = btn.textContent.trim();
+
+    // exact text requested + spinner
+    btn.innerHTML = 'Processing . . .. <span class="spinner" aria-hidden="true"></span>';
+
+    // For screen readers, announce the change
+    btn.setAttribute('aria-live', 'polite');
+  }
+
+  // Attach to click; call before your checkout redirect/logic
+  orderButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      setProcessing(btn);
+      // 👉 your existing checkout code continues here (e.g., redirect to Stripe)
+      // Example:
+      // stripe.redirectToCheckout({ sessionId }).then(() => {/* no-op */});
+    });
+  });
+
+  console.log('API:', api);
+  console.log('Base URL:', baseUrl);
+
+  // Handle success/cancel returns from Stripe Checkout
+  if (url.searchParams.get('success') === 'true') {
+    offerLabel.textContent = '✅ Order successful! Check your email for confirmation.';
+    offerLabel.style.color = '#10b981';
+  } else if (url.searchParams.get('canceled') === 'true') {
+    offerLabel.textContent = 'Order canceled. Feel free to try again!';
+    offerLabel.style.color = '#f59e0b';
+  } else {
+    offerLabel.textContent = 'Offer: ' + offerKey.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  }
+
+  // Simple email validation
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+
+  let selected = null;
+
+  function money(n){
+    const v = Number(n || 0);
+    return v.toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:2});
+  }
+
+  function computeSavings(price, compareAt){
+    if(!compareAt || compareAt<=price) return null;
+    const diff = compareAt - price;
+    const pct = Math.round(diff/compareAt*100);
+    return {diff, pct};
+  }
+
+  function badgeClass(label=''){
+    const l = label.toLowerCase();
+    if(l.includes('best') || l.includes('value')) return 'gold';
+    if(l.includes('limited') || l.includes('flash') || l.includes('save')) return 'red';
+    return '';
+  }
+
+  // ---- Price extraction that prefers API "lowest price" ----
+  function centsToDollars(cents){
+  const n = Number(cents || 0);
+  return (n/100);
+  }
+
+  function labelFromName(name=""){
+    const s = String(name).toLowerCase();
+    const word2num = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+    // Try digits first
+    const d = s.match(/(\d+)\s*(pouch|pouches|pack|box|bottle)s?/i);
+    if (d) return `${d[1]} pouches`;
+    // Try words (six, three, etc.)
+    const w = s.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten)\b/i);
+    if (w) return `${word2num[w[1].toLowerCase()]} pouches`;
+    // Fallback: strip brand prefix if present
+    const afterDash = s.split(' - ').pop();
+    return afterDash || name;
+  }
+
+  function minFromArray(arr, fields=['lowest_price','price','amount','unit_amount','total']){
+    let best = Infinity;
+    for(const item of arr){
+      for(const f of fields){
+        if(item && item[f] != null){
+          best = Math.min(best, centsToDollars(item[f]));
+        }
+      }
+    }
+    return isFinite(best) ? best : 0;
+  }
+  function determinePrice(p){
+    // Highest priority: explicit "lowest price" field names commonly used
+    const directLowest = p.lowest_price ?? p.lowestPrice ?? p.min_price ?? p.minPrice ?? p.best_price ?? p.bestPrice;
+    if(directLowest != null) return centsToDollars(directLowest);
+
+    // Otherwise, inspect nested price arrays/objects
+    if(Array.isArray(p.prices)) return minFromArray(p.prices);
+    if(Array.isArray(p.price_options)) return minFromArray(p.price_options);
+    if(p.price_table && Array.isArray(p.price_table.options)) return minFromArray(p.price_table.options);
+
+    // Fall back to a single price field
+    const fallback = p.price ?? p.amount ?? p.unit_price ?? p.total ?? 0;
+    return centsToDollars(fallback);
+  }
+  function determineCompareAt(p){
+    const v = p.compare_at ?? p.compareAt ?? p.msrp ?? p.anchor_price ?? p.anchorPrice ?? 0;
+    return centsToDollars(v);
+  }
+
+  function buildCard(pkg, idx){
+    const id = 'pkg_' + (pkg.id || idx);
+    const label = pkg.badge || ''; // keep “Best Value”/“Most Popular” as-is if sent by API
+    const bClass = badgeClass(label);
+    const savings = computeSavings(pkg.price, pkg.compare_at);
+
+    let btnTxt = pkg.name.replace("Creatine Gummies - ", "");
+
+    const el = document.createElement('label');
+    el.className = 'card';
+    el.setAttribute('for', id);
+    el.innerHTML = `
+      ${label ? `<div class="badge ${bClass}">${label}</div>` : ``}
+      <div class="title">${pkg.name || 'Package'}</div>
+      <p class="sub">${pkg.subtitle || ''}</p>
+      <div class="priceRow">
+        <div class="price">${money(pkg.price)}</div>
+        ${pkg.compare_at ? `<div class="compare">${money(pkg.compare_at)}</div>`:''}
+        ${savings ? `<div class="savings">Save ${savings.pct}%</div>`:''}
+      </div>
+      <div class="radioRow">
+        <input type="radio" name="package" id="${id}" value="${id}">
+        <span style="font-size:12px;color:#9ca3af">${pkg.short || 'Ships in 24-48h'}</span>
+      </div>
+    `;
+
+    el.addEventListener('change', () => {
+      selected = pkg;
+      orderBtn.disabled = false;
+      orderBtn.textContent = `${btnTxt}: ${money(pkg.price)}`;
+    });
+
+    return el;
+  }
+
+  function hydrate(packages){
+    cardsEl.innerHTML = '';
+    if(!packages || !packages.length){
+      cardsEl.innerHTML = `<p class="note">No packages found for this offer.</p>`;
+      orderBtn.disabled = true;
+      orderBtn.textContent = 'Select a package';
+      return;
+    }
+
+    // Prefer ordering by explicit badges then by price desc
+    const orderScore = (p) => {
+      const tag = (p.badge||'').toLowerCase();
+      if(tag.includes('best')) return -2;
+      if(tag.includes('popular')) return -1;
+      return 0;
+    };
+    packages.sort((a,b)=> (orderScore(a)-orderScore(b)) || (b.price - a.price));
+
+    packages.forEach((pkg,i)=> cardsEl.appendChild(buildCard(pkg,i)));
+
+    // Preselect first
+    const firstRadio = cardsEl.querySelector('input[type=radio]');
+    if(firstRadio){
+      firstRadio.checked = true;
+      const first = packages[0];
+      selected = first;
+      orderBtn.disabled = false;
+      orderBtn.textContent = `${first.name.replace("Creatine Gummies - ", "")}: ${money(first.price)}`;
+    }else{
+      orderBtn.disabled = true;
+      orderBtn.textContent = 'Select a package';
+    }
+  }
+
+  function normalizeFromApi(json, offerKey){
+    // Navigate to the offer node
+    let node = json;
+    if (node && node.offers && node.offers[offerKey]) {
+        node = node.offers[offerKey];
+    }
+
+    console.log(json);
+
+    // Your API puts full product objects in `product_ids`
+    const arr = Array.isArray(node?.product_ids) ? node.product_ids : [];
+
+    // Map each product object → our UI shape
+    const mapped = arr.map((p, i) => {
+        // Lowest price is in cents
+        const price = p.lowest_price != null
+        ? centsToDollars(p.lowest_price)
+        : (Array.isArray(p.prices) && p.prices.length
+            ? Math.min(...p.prices.map(x => centsToDollars(x.unit_amount || 0)))
+            : 0);
+
+        // Optional compare_at: take the highest unit_amount (if it’s above lowest)
+        let compareAt = 0;
+        if (Array.isArray(p.prices) && p.prices.length) {
+        const maxUnit = Math.max(...p.prices.map(x => Number(x.unit_amount || 0)));
+        const maxDollars = centsToDollars(maxUnit);
+        compareAt = maxDollars > price ? maxDollars : 0;
+        }
+
+        return {
+        raw: p,
+        id: p.id || `prod-${i+1}`,
+        price_id: (Array.isArray(p.prices) && p.prices.length) ? (p.prices.find(pr => pr.unit_amount === p.lowest_price) || p.prices[0]).id : null,
+        name: p.name || `Package ${i+1}`,          // use API name as requested
+        subtitle: p.description || '',
+        price,                                      // dollars
+        compare_at: compareAt,                      // dollars (optional)
+        badge: p.badge || p.label || '',            // keep “Best Value / Most Popular” if you add them later
+        short: 'Ships in 24-48h',
+        // handy presentation label for the CTA:
+        _ctaLabel: labelFromName(p.name),
+        has_upsell: p.has_upsell || false,
+        upsell_product_id: (p.metadata && p.metadata.upsell_product_id) || null,
+        upsell_price_id: (p.metadata && p.metadata.upsell_price_id) || null,
+        upsell_offer_text: (p.metadata && p.metadata.upsell_offer_text) || null,
+        };
+    });
+
+    console.log(mapped);
+
+    return mapped;
+  }
+
+
+  async function load(){
+    try{
+      const res = await fetch(api, {credentials:'omit', mode:'cors', cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      const pkgs = normalizeFromApi(data, offerKey);
+      hydrate(pkgs);
+    }catch(err){
+      console.error(err);
+      cardsEl.innerHTML = `
+        <div class="card">
+          <div class="title">We're having trouble loading packages.</div>
+          <p class="sub">Please try again in a moment.</p>
+          <div class="priceRow"><div class="price">$0.00</div></div>
+          <div class="radioRow"><input type="radio" disabled><span style="font-size:12px;color:#9ca3af">Sample option</span></div>
+        </div>`;
+      orderBtn.disabled = true;
+      orderBtn.textContent = 'Select a package';
+    }
+  }
+
+  orderBtn.addEventListener('click', ()=>{
+    if(!selected){ return; }
+    
+    // ✅ CRITICAL: Validate email before checkout
+    // const customerEmail = emailInput.value.trim();
+    // if (!customerEmail) {
+    //   alert('Please enter your email address to continue');
+    //   emailInput.focus();
+    //   return;
+    // }
+    
+    // if (!isValidEmail(customerEmail)) {
+    //   alert('Please enter a valid email address');
+    //   emailInput.focus();
+    //   return;
+    // }
+    
+    // Validate we have a price_id
+    if (!selected.price_id) {
+      alert('Unable to process checkout: missing price information');
+      return;
+    }
+    
+    // Build checkout URL with all necessary parameters
+    const checkoutUrl = new URL(`${baseUrl}/api/create-checkout`);
+    checkoutUrl.searchParams.set('price_id', selected.price_id);
+    checkoutUrl.searchParams.set('product_id', selected.id);
+    checkoutUrl.searchParams.set('clientID', clientID);
+    checkoutUrl.searchParams.set('offer', offerKey);
+    
+    // ✅ CRITICAL: Pass customer email so checkout can save payment method!
+    // checkoutUrl.searchParams.set('customer_email', customerEmail);
+    
+    // console.log('✅ Customer email:', customerEmail);
+    
+    // Determine success URL based on whether product has upsell
+    let successUrl;
+    const baseSuccessPath = location.origin + location.pathname.replace(/[^\/]*$/, '');
+    
+    // proposed (redirect on has_upsell alone; send optional hints if present)
+    if (selected.has_upsell) {
+      successUrl = `${baseSuccessPath}upsell.html?session_id={CHECKOUT_SESSION_ID}`;
+      checkoutUrl.searchParams.set('has_upsell', 'true');
+      if (selected.upsell_product_id) {
+        checkoutUrl.searchParams.set('upsell_product_id', selected.upsell_product_id);
+      }
+      if (selected.upsell_price_id) {
+        checkoutUrl.searchParams.set('upsell_price_id', selected.upsell_price_id);
+      }
+      if (selected.upsell_offer_text) {
+        checkoutUrl.searchParams.set('upsell_offer_text', selected.upsell_offer_text);
+      }
+    } else {
+      successUrl = `${baseSuccessPath}thank-you.html?session_id={CHECKOUT_SESSION_ID}`;
+    }
+
+    
+    const cancelUrl = `${location.origin}${location.pathname}?canceled=true`;
+    checkoutUrl.searchParams.set('success_url', successUrl);
+    checkoutUrl.searchParams.set('cancel_url', cancelUrl);
+    
+    console.log('Redirecting to checkout:', checkoutUrl.href);
+    console.log('Success URL:', successUrl);
+    console.log('Has upsell:', selected.has_upsell);
+
+    // Redirect to checkout creation endpoint
+    location.href = checkoutUrl.href;
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

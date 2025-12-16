@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <meta name="description" content="Admin Dashboard - Manage your business operations">
+    <link rel="icon" type="image/x-icon" href="https://images.juniorbay.com/icon/favicon.png">
+    <link rel="stylesheet" href="css/skydash-theme.css">
+    <link rel="stylesheet" href="css/landing-pages-styles.css">
+    <link rel="stylesheet" href="https://juniorbay.com/vendor/intl-tel-input/25.11.2/build/css/intlTelInput.min.css">
+</head>
+<body>
+    <!-- ==================== LOGIN SECTION ==================== -->
+    <div id="login-section" class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">
+                    <img src="https://images.juniorbay.com/icon/favicon.png" alt="Junior Bay Logo" />
+                </div>
+                <h1 class="login-title">Admin Login</h1>
+                <p class="login-subtitle">Enter your credentials to access the admin panel</p>
+            </div>
+
+            <div class="login-body login-content">
+                <!-- Auth Tabs (keep both class sets) -->
+                <div class="auth-tabs login-tabs">
+                    <button class="auth-tab login-tab active" data-auth-tab="login">Login</button>
+                    <button class="auth-tab login-tab" data-auth-tab="register">Register</button>
+                    <button class="auth-tab login-tab" data-auth-tab="forgot">Forgot</button>
+                </div>
+
+                <!-- Login View -->
+                <div id="auth-login" class="auth-view login-view active">
+                    <div class="form-group">
+                        <label for="loginEmail" class="form-label">Email</label>
+                        <input
+                            type="email"
+                            id="loginEmail"
+                            class="form-input"
+                            placeholder="admin@example.com"
+                            autocomplete="username"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPass" class="form-label">Password</label>
+                        <input
+                            type="password"
+                            id="loginPass"
+                            class="form-input"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required
+                        >
+                    </div>
+                    <button type="button" id="btnLogin" class="login-btn btn">Sign In</button>
+                    <div id="loginMsg" class="mt-4"></div>
+                </div>
+
+                <!-- Register View -->
+                <div id="auth-register" class="auth-view login-view">
+                    <div class="form-group">
+                        <label for="regFirstName" class="form-label">First Name</label>
+                        <input type="text" id="regFirstName" class="form-input" placeholder="John" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regLastName" class="form-label">Last Name</label>
+                        <input type="text" id="regLastName" class="form-input" placeholder="Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regEmail" class="form-label">Email</label>
+                        <input type="email" id="regEmail" class="form-input" placeholder="john@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPhone" class="form-label">Phone Number</label>
+                        <input type="tel" id="regPhone" class="form-input" placeholder="Phone" required>
+                        <small class="muted" style="font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                            Format: +1234567890 (include country code)
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPass" class="form-label">Password</label>
+                        <input type="password" id="regPass" class="form-input" placeholder="Create a password" required>
+                    </div>
+                    <button type="button" id="btnRegister" class="login-btn btn">Create Account</button>
+
+                    <div class="alert alert-info mt-4">
+                        After sign-up, check your email for the verification code.
+                    </div>
+
+                    <h3 class="mt-4">Confirm Email</h3>
+                    <div class="form-group">
+                        <label for="confEmail" class="form-label">Email</label>
+                        <input type="email" id="confEmail" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="confCode" class="form-label">Verification Code</label>
+                        <input type="text" id="confCode" class="form-input">
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="button" id="btnConfirm" class="btn btn-primary">Confirm</button>
+                        <button type="button" id="btnResend" class="btn btn-secondary">Resend</button>
+                    </div>
+                    <div id="regMsg" class="mt-4"></div>
+                </div>
+
+                <!-- Forgot Password View -->
+                <div id="auth-forgot" class="auth-view login-view">
+                    <h3>Reset Password</h3>
+                    <div class="form-group">
+                        <label for="fpEmail" class="form-label">Email</label>
+                        <input type="email" id="fpEmail" class="form-input" placeholder="Enter your email">
+                    </div>
+                    <button type="button" id="btnForgot" class="login-btn btn">Send Reset Code</button>
+
+                    <h3 class="mt-4">Confirm New Password</h3>
+                    <div class="form-group">
+                        <label for="fpConfEmail" class="form-label">Email</label>
+                        <input type="email" id="fpConfEmail" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="fpCode" class="form-label">Code</label>
+                        <input type="text" id="fpCode" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="fpNewPass" class="form-label">New Password</label>
+                        <input type="password" id="fpNewPass" class="form-input">
+                    </div>
+                    <button type="button" id="btnConfirmNew" class="btn">Set New Password</button>
+                    <div id="fpMsg" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN APP ==================== -->
+    <div id="main-app" class="app-wrapper hidden">
+        <!-- Sidebar Overlay (Mobile) -->
+        <div class="sidebar-overlay"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-icon"><img src="https://images.juniorbay.com/icon/favicon.png" alt="Junior Bay Logo" /></div>
+                <span class="sidebar-brand-text">Admin Panel</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <!-- Main Section -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link nav-tab active" data-tab="dashboard">
+                                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                </svg>
+                                <span class="nav-text">Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link nav-tab" data-tab="keys">
+                                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                                </svg>
+                                <span class="nav-text">Stripe Keys</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Products Section -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Catalog</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link nav-tab" data-tab="products">
+                                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                </svg>
+                                <span class="nav-text">Products</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link nav-tab" data-tab="offers">
+                                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
+                                </svg>
+                                <span class="nav-text">Offers</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link nav-tab" data-tab="landing-pages">
+                                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                                </svg>
+                                <span class="nav-text">Landing Pages</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Orders Section -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Orders</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link nav-tab" data-tab="orders">
+                                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                                </svg>
+                                <span class="nav-text">Orders</span>
+                                <span class="nav-badge">12</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link nav-tab" data-tab="shipping">
+                                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+                                </svg>
+                                <span class="nav-text">Shipping</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Settings</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link nav-tab" data-tab="config">
+                                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                <span class="nav-text">Configuration</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Container -->
+        <div class="main-container">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" title="Toggle sidebar">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                    <div class="search-box">
+                        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input type="text" class="search-input" placeholder="Search... (Ctrl+K)">
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <!-- Env Badge -->
+                    <span id="envLabel" class="env-badge dev">Test</span>
+                    
+                    <!-- Env Toggle -->
+                    <label class="theme-toggle" title="Toggle environment" style="position: relative;">
+                        <input type="checkbox" id="envToggle" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </label>
+
+                    <!-- Notifications -->
+                    <button class="header-btn" title="Notifications">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                        <span class="notification-badge"></span>
+                    </button>
+
+                    <!-- User Menu -->
+                    <div class="dropdown">
+                        <div class="user-menu" data-dropdown>
+                            <div class="user-avatar" id="user-avatar">A</div>
+                            <div class="user-info">
+                                <div class="user-name" id="who">Admin</div>
+                                <div class="user-role" id="user-role">Administrator</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-menu">
+                            <div class="dropdown-item">
+                                <svg class="icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                                Profile
+                            </div>
+                            <div class="dropdown-item">
+                                <svg class="icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                Settings
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-item" id="btnSignOut">
+                                <svg class="icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                </svg>
+                                Sign Out
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="page-subtitle">Overview of your business metrics</p>
+                </div>
+
+                <!-- Dashboard Tab -->
+                <div id="dashboard-tab" class="tab-content active">
+                    <!-- Stats Grid -->
+                    <div class="stats-grid mb-6">
+                        <div class="stats-card">
+                            <div class="stat-icon primary">
+                                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-label">Total Orders</div>
+                                <div class="stat-value" id="statOrdersValue">--</div>
+                                <div class="stat-change" id="statOrdersMeta">Connecting to Stripe…</div>
+                            </div>
+                        </div>
+
+                        <div class="stats-card">
+                            <div class="stat-icon success">
+                                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-label">Revenue</div>
+                                <div class="stat-value" id="statRevenueValue">--</div>
+                                <div class="stat-change" id="statRevenueMeta">Connecting to Stripe…</div>
+                            </div>
+                        </div>
+
+                        <div class="stats-card">
+                            <div class="stat-icon warning">
+                                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-label">Customers</div>
+                                <div class="stat-value" id="statCustomersValue">--</div>
+                                <div class="stat-change" id="statCustomersMeta">Connecting to Stripe…</div>
+                            </div>
+                        </div>
+
+                        <div class="stats-card">
+                            <div class="stat-icon danger">
+                                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-label">Products</div>
+                                <div class="stat-value" id="statProductsValue">--</div>
+                                <div class="stat-change" id="statProductsMeta">Connecting to Stripe…</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Content Grid -->
+                    <div class="content-grid">
+                        <!-- Recent Orders -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Recent Orders</h3>
+                                <button class="btn btn-secondary btn-sm" id="btnViewAllOrders">View All</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-wrapper">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Customer</th>
+                                                <th>Amount</th>
+                                                <th>Risk Score</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recentOrdersBody">
+                                            <tr>
+                                                <td colspan="4" class="text-muted">Connecting to Stripe…</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Recent Activity</h3>
+                                <button class="card-close" id="btnCloseActivity" aria-label="Close Recent Activity">
+                                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" stroke="red" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="activity-list">
+                                    <div class="activity-item">
+                                        <div class="activity-dot success"></div>
+                                        <div class="activity-content">
+                                            <div class="activity-text">Keith issued refund for Order #ORD-2984 ($89.50)</div>
+                                            <div class="activity-time">5 minutes ago</div>
+                                        </div>
+                                    </div>
+                                    <div class="activity-item">
+                                        <div class="activity-dot danger"></div>
+                                        <div class="activity-content">
+                                            <div class="activity-text">Dispute opened on Order #ORD-2978 - reason: product not received</div>
+                                            <div class="activity-time">18 minutes ago</div>
+                                        </div>
+                                    </div>
+                                    <div class="activity-item">
+                                        <div class="activity-dot success"></div>
+                                        <div class="activity-content">
+                                            <div class="activity-text">New order received from Sarah Johnson ($124.00)</div>
+                                            <div class="activity-time">32 minutes ago</div>
+                                        </div>
+                                    </div>
+                                    <div class="activity-item">
+                                        <div class="activity-dot primary"></div>
+                                        <div class="activity-content">
+                                            <div class="activity-text">Admin action: Keith updated Stripe API keys for Acme Labs</div>
+                                            <div class="activity-time">1 hour ago</div>
+                                        </div>
+                                    </div>
+                                    <div class="activity-item">
+                                        <div class="activity-dot primary"></div>
+                                        <div class="activity-content">
+                                            <div class="activity-text">Admin action: Megan created offer "NAD Booster 6-Pack"</div>
+                                            <div class="activity-time">2 hours ago</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Keys Tab -->
+                <div id="keys-tab" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Tenant Stripe Keys</h3>
+                            <p class="text-muted">
+                                Use your tenant's <span class="font-mono">clientID</span> (the ID you pass from the offer page).
+                            </p>
+                        </div>
+                        <div class="card-body">
+                            <h4 class="mb-3">Lookup / Update</h4>
+                            <div class="form-group">
+                                <label class="form-label" for="clientID">clientID</label>
+                                <input
+                                    id="clientID"
+                                    class="form-input font-mono"
+                                    placeholder="c85d5a3d-663e-4372-bc71-376881d5f63d"
+                                >
+                            </div>
+
+                            <div class="flex gap-2 mt-3 mb-6">
+                                <button id="btnGet" class="btn btn-primary">Get</button>
+                                <button id="btnSave" class="btn btn-secondary">Save</button>
+                            </div>
+
+                            <div class="grid grid-two mt-12">
+                                <div>
+                                    <h4 class="mb-3">Test Keys</h4>
+                                    <div class="form-group">
+                                        <label>pk_test</label>
+                                        <input id="pk_test" class="form-input font-mono" autocomplete="off">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>sk_test (plaintext)</label>
+                                        <input id="sk_test" class="form-input font-mono" autocomplete="off">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>wh_secret_test</label>
+                                        <input id="wh_test" class="form-input font-mono" autocomplete="off">
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="form-label-row">
+                                            <label for="webhook_url_test">Webhook Endpoint (Test)</label>
+                                            <button type="button" id="btnTestWebhookTest" class="btn btn-test-webhook">Test this endpoint</button>
+                                        </div>
+                                        <input id="webhook_url_test" class="form-input font-mono" placeholder="https://api-dev.example.com/webhook/..." autocomplete="off">
+                                        <div id="webhookToastTest" class="webhook-toast"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 class="mb-3">Live Keys</h4>
+                                    <div class="form-group">
+                                        <label>pk_live</label>
+                                        <input id="pk_live" class="form-input font-mono" autocomplete="off">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>sk_live (plaintext)</label>
+                                        <input id="sk_live" class="form-input font-mono" autocomplete="off">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>wh_secret_live</label>
+                                        <input id="wh_live" class="form-input font-mono" autocomplete="off">
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="form-label-row">
+                                            <label for="webhook_url_live">Webhook Endpoint (Live)</label>
+                                            <button type="button" id="btnTestWebhookLive" class="btn btn-test-webhook">Test this endpoint</button>
+                                        </div>
+                                        <input id="webhook_url_live" class="form-input font-mono" placeholder="https://api.example.com/webhook/..." autocomplete="off">
+                                        <div id="webhookToastLive" class="webhook-toast"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 mt-4 flex-wrap">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label" for="mode">Verify Mode</label>
+                                    <select id="form-select">
+                                        <option value="test">Test</option>
+                                        <option value="live">Live</option>
+                                    </select>
+                                </div>
+                                <div class="flex gap-2 flex-wrap">
+                                    <button id="btnVerify" class="btn btn-primary" title="Calls /admin/verify">Verify Webhook Secret</button>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div id="verifyMsg" class="text-muted mb-3"></div>
+                            </div>
+
+                            <div id="apiMsg" class="mt-12 text-muted"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Tab -->
+                <div id="products-tab" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Product Management</h3>
+                            <div class="flex gap-2">
+                                <button id="btnLoadProducts" class="btn btn-secondary btn-sm">Load Products</button>
+                                <button id="btnCreateProduct" class="btn btn-primary btn-sm">+ Create New Product</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted text-center" style="padding: 40px 0;">Click "Load Products" to view your products</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Offers Tab -->
+                <div id="offers-tab" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Offer Configuration</h3>
+                            <div class="flex gap-2">
+                                <button id="btnAddOffer" class="btn btn-secondary btn-sm" disabled>+ Add Offer</button>
+                                <button id="btnLoadOffers" class="btn btn-secondary btn-sm">Load Offers</button>
+                                <button id="btnSaveOffers" class="btn btn-primary btn-sm" disabled>Save All</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Content will be dynamically rendered by main.js -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Landing Pages Tab -->
+                <div id="landing-pages-tab" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Landing Pages</h3>
+                            <div class="flex gap-2">
+                                <button class="btn btn-secondary btn-sm">Load Pages</button>
+                                <button class="btn btn-primary btn-sm">+ Create New Page</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted text-center" style="padding: 40px 0;">Click "Load Pages" to view your landing pages</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders Tab -->
+                <div id="orders-tab" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Order Management</h3>
+                            <button class="btn btn-secondary btn-sm">Refresh Orders</button>
+                        </div>
+                        <div class="card-body">
+                            <!-- Order Stats -->
+                            <div class="stats-grid mb-6" style="grid-template-columns: repeat(3, 1fr);">
+                                <div class="stats-card">
+                                    <div class="stat-content">
+                                        <div class="stat-label">Total Unfulfilled</div>
+                                        <div class="stat-value">12</div>
+                                    </div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stat-content">
+                                        <div class="stat-label">Pending Revenue</div>
+                                        <div class="stat-value">$2,450</div>
+                                    </div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stat-content">
+                                        <div class="stat-label">Avg. Order Value</div>
+                                        <div class="stat-value">$204</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Orders Table -->
+                            <div class="table-wrapper">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th>
+                                            <th>Customer</th>
+                                            <th>Date</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="font-mono">#ORD-2847</td>
+                                            <td>John Smith</td>
+                                            <td>Dec 4, 2025</td>
+                                            <td>$124.00</td>
+                                            <td><span class="badge warning">Unfulfilled</span></td>
+                                            <td><button class="btn btn-secondary btn-sm">View</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shipping Tab -->
+                <div id="shipping-tab" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Shipping Configuration</h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Configure shipping options and rates for your products.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Config Tab -->
+                <div id="config-tab" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">System Configuration</h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Manage system settings and preferences.</p>
+                            
+                            <div class="form-group mt-24">
+                                <label class="form-label">API Endpoint</label>
+                                <input type="text" class="form-input font-mono" value="https://api.example.com" readonly>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Environment</label>
+                                <select class="form-select">
+                                    <option value="dev">Development</option>
+                                    <option value="prod">Production</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1543.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.12/dist/amazon-cognito-identity.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="https://juniorbay.com/vendor/intl-tel-input/25.11.2/build/js/intlTelInputWithUtils.min.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/stripe-keys.js"></script>
+    <script src="js/offers.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/main.js"></script>
+
+    <div id="productModal" class="product-modal hidden">
+        <div class="product-modal-backdrop" data-close-product-modal></div>
+        <div class="product-modal-dialog">
+            <button type="button" class="product-modal-close" id="btnCloseProductModal" aria-label="Close product editor">×</button>
+            <div id="productFormSection" class="product-modal-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h1 class="card-title" id="productFormTitle">Create New Product</h1>
+                    </div>
+                    <div class="card-content">
+                        <div id="productFormMsg" class="mt12 muted"></div>
+                        <form id="productForm" onsubmit="return false;">
+                            <h2>Basic Information</h2>
+                            <div class="form-group">
+                                <label for="productName">Product Name *</label>
+                                <input type="text" id="productName" required placeholder="e.g. Premium Widget">
+                            </div>
+
+                            <div id="priceManagementSection" class="hidden">
+                                <h2 class="mt24">Price Management</h2>
+                                <div class="muted mb12">Existing prices (prices cannot be edited, only added or archived)</div>
+                                <div id="existingPricesContainer"></div>
+                                <button type="button" id="btnAddNewPrice" class="btn btn-sm btn-secondary mt-3" style="width: auto;">+ Add New Price</button>
+                            </div>
+
+                            <div id="pricesSection">
+                                <h2 class="mt24">Pricing</h2>
+                                <div class="muted mb12">Add one or more prices for this product</div>
+                                <div id="pricesContainer"></div>
+                                <button type="button" id="btnAddPrice" class="btn btn-sm btn-secondary mt-3" style="width: auto;">+ Add Another Price</button>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="productDescription">Description</label>
+                                <textarea id="productDescription" rows="3" placeholder="Describe your product..."></textarea>
+                            </div>
+                            
+                            <h2 class="mt24">Product Type</h2>
+                            <div class="form-group">
+                                <label for="productType">Type</label>
+                                <select id="productType">
+                                    <option value="physical">Physical - Requires shipping</option>
+                                    <option value="non-physical">Non-Physical - Digital/Service (no shipping)</option>
+                                </select>
+                                <small class="muted">Physical products require shipping configuration. Non-physical products skip shipping.</small>
+                            </div>
+
+                            <h2 class="mt16">Product Category</h2>
+                            <div class="form-group">
+                                <label for="productCategory">Category</label>
+                                <select id="productCategory">
+                                    <option value="standard">Standard - Default Product</option>
+                                    <option value="basic">Basic - Entry Level (First in funnel, with upsell)</option>
+                                    <option value="upsell">Upsell - Post-Purchase Discounted Offer</option>
+                                    <option value="mid-tier">Mid-Tier - Middle Option</option>
+                                    <option value="premium">Premium - High-End Offer (Last in funnel)</option>
+                                    <option value="subscription">Subscription - Recurring Payment</option>
+                                    <option value="addon">Add-On - Supplementary Product</option>
+                                    <option value="bundle">Bundle - Multi-Product Package</option>
+                                </select>
+                                <small class="muted">Defines product position in sales funnel and landing page display order</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label style="display:flex;align-items:center;gap:8px;">
+                                    <input type="checkbox" id="productActive" checked style="width:auto;"/> 
+                                    Active (visible in Stripe)
+                                </label>
+                            </div>
+
+                            <h2 class="mt24">Product Images</h2>
+                            <div class="form-group">
+                                <label for="productImages">Image URLs (one per line)</label>
+                                <textarea id="productImages" rows="3" placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"></textarea>
+                                <small class="muted">Enter direct image URLs, one per line</small>
+                            </div>
+
+                            <h2 class="mt24">Package Dimensions (for physical products only)</h2>
+                            <div class="grid grid-two">
+                                <div>
+                                    <label for="packageLength">Length (inches)</label>
+                                    <input type="number" id="packageLength" value="10" min="1" step="0.1">
+                                </div>
+                                <div>
+                                    <label for="packageWidth">Width (inches)</label>
+                                    <input type="number" id="packageWidth" value="8" min="1" step="0.1">
+                                </div>
+                                <div>
+                                    <label for="packageHeight">Height (inches)</label>
+                                    <input type="number" id="packageHeight" value="4" min="1" step="0.1">
+                                </div>
+                                <div>
+                                    <label for="packageWeight">Weight (pounds)</label>
+                                    <input type="number" id="packageWeight" value="1" min="0.1" step="0.1">
+                                </div>
+                            </div>
+
+                            <div id="upsellConfigSection" class="hidden">
+                                <h2 class="mt24">Upsell Configuration</h2>
+                                <div class="muted mb12">Select a product to offer as an upsell after purchase</div>
+                                
+                                <input type="hidden" id="upsellProductId">
+                                <input type="hidden" id="upsellPriceId">
+                                
+                                <div id="upsellProductsContainer" class="upsell-products-container">
+                                    <div class="muted">Loading products...</div>
+                                </div>
+                                
+                                <div class="form-group mt-3">
+                                    <label for="upsellOfferText">Upsell Offer Text</label>
+                                    <input type="text" id="upsellOfferText" placeholder="Yes, I accept the offer for only {{upsell_price}}!">
+                                    <small class="muted">Customize the text shown to customers for this upsell offer</small>
+                                </div>
+                            </div>
+
+                            <h2 class="mt24">Landing Page Configuration</h2>
+                            <div class="muted mb12">Metadata for dynamic offer page generation</div>
+                            
+                            <div class="form-group">
+                                <label for="heroTitle">Hero Title</label>
+                                <input type="text" id="heroTitle" placeholder="Transform Your Life Today!">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="heroSubtitle">Hero Subtitle</label>
+                                <input type="text" id="heroSubtitle" placeholder="The ultimate solution you've been waiting for">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="benefits">Benefits (pipe-separated)</label>
+                                <textarea id="benefits" rows="3" placeholder="Benefit 1|Benefit 2|Benefit 3"></textarea>
+                                <small class="muted">Separate each benefit with a pipe character (|)</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="guarantee">Guarantee Text</label>
+                                <input type="text" id="guarantee" placeholder="30-day money-back guarantee">
+                            </div>
+
+                            <div class="row mt24">
+                                <button type="button" id="btnSaveProduct">Save Product</button>
+                                <button type="button" id="btnCancelProduct" class="secondary">Cancel</button>
+                            </div>
+                            <div id="productFormMsgBottom" class="mt-3"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,155 @@
+{
+  "config_key": "landing_page_config",
+  "environment": "prod",
+  "description": "Configuration for landing page generator system",
+  "updated_at": "2025-01-15T10:00:00Z",
+  "updated_by": "admin",
+  "value": {
+    "landing_pages_bucket": "landing-pages-prod",
+    "preview_bucket": "landing-pages-preview",
+    "template_cdn_base": "https://templates.juniorbay.com/v1",
+    "custom_assets_cdn": "https://templates.juniorbay.com/custom",
+    "cloudfront_distribution_id": "E1234567890ABC",
+    "cloudfront_domain": "d1234567890abc.cloudfront.net",
+    "lambda_edge_arn": "arn:aws:lambda:us-east-1:150544707159:function:landing-page-router:1",
+    "lambda_generator_arn": "arn:aws:lambda:us-west-2:150544707159:function:landing-page-generator",
+    "ab_testing_enabled": true,
+    "max_concurrent_ab_tests": 5,
+    "available_templates": [
+      {
+        "id": "single-product-hero",
+        "name": "Single Product Hero",
+        "description": "Large hero image with single CTA",
+        "thumbnail": "https://templates.juniorbay.com/v1/single-product-hero/thumbnail.png",
+        "max_products": 1,
+        "supports_custom_fields": false
+      },
+      {
+        "id": "three-tier-pricing",
+        "name": "Three-Tier Pricing",
+        "description": "Side-by-side pricing comparison",
+        "thumbnail": "https://templates.juniorbay.com/v1/three-tier-pricing/thumbnail.png",
+        "max_products": 3,
+        "supports_custom_fields": false
+      },
+      {
+        "id": "five-tier-pricing",
+        "name": "Five-Tier Pricing",
+        "description": "Extended pricing options",
+        "thumbnail": "https://templates.juniorbay.com/v1/five-tier-pricing/thumbnail.png",
+        "max_products": 5,
+        "supports_custom_fields": false
+      },
+      {
+        "id": "sales-letter",
+        "name": "Sales Letter",
+        "description": "Long-form sales copy",
+        "thumbnail": "https://templates.juniorbay.com/v1/sales-letter/thumbnail.png",
+        "max_products": 1,
+        "supports_custom_fields": false
+      },
+      {
+        "id": "video-sales",
+        "name": "Video Sales Page",
+        "description": "Video-first presentation",
+        "thumbnail": "https://templates.juniorbay.com/v1/video-sales/thumbnail.png",
+        "max_products": 1,
+        "supports_custom_fields": false
+      },
+      {
+        "id": "email-capture-lead",
+        "name": "Email Capture",
+        "description": "Lead generation focus",
+        "thumbnail": "https://templates.juniorbay.com/v1/email-capture-lead/thumbnail.png",
+        "max_products": 1,
+        "supports_custom_fields": false
+      },
+      {
+        "id": "subscription-focus",
+        "name": "Subscription Focus",
+        "description": "Recurring payment emphasis",
+        "thumbnail": "https://templates.juniorbay.com/v1/subscription-focus/thumbnail.png",
+        "max_products": 1,
+        "supports_custom_fields": false
+      },
+      {
+        "id": "configurable-product",
+        "name": "Configurable Product",
+        "description": "Product with custom options",
+        "thumbnail": "https://templates.juniorbay.com/v1/configurable-product/thumbnail.png",
+        "max_products": 1,
+        "supports_custom_fields": true
+      },
+      {
+        "id": "custom",
+        "name": "Custom Layout",
+        "description": "Flexible multi-product layout",
+        "thumbnail": "https://templates.juniorbay.com/v1/custom/thumbnail.png",
+        "max_products": 5,
+        "supports_custom_fields": true
+      }
+    ],
+    "plan_limits": {
+      "basic": {
+        "landing_pages": 1,
+        "ab_tests_concurrent": 0,
+        "custom_fields_per_page": 0,
+        "custom_css": false,
+        "custom_js": false,
+        "custom_domain": false
+      },
+      "pro": {
+        "landing_pages": 5,
+        "ab_tests_concurrent": 2,
+        "custom_fields_per_page": 5,
+        "custom_css": true,
+        "custom_js": false,
+        "custom_domain": false
+      },
+      "business": {
+        "landing_pages": 10,
+        "ab_tests_concurrent": 5,
+        "custom_fields_per_page": 10,
+        "custom_css": true,
+        "custom_js": true,
+        "custom_domain": true
+      },
+      "enterprise": {
+        "landing_pages": -1,
+        "ab_tests_concurrent": -1,
+        "custom_fields_per_page": -1,
+        "custom_css": true,
+        "custom_js": true,
+        "custom_domain": true
+      }
+    },
+    "default_testimonials": [
+      {
+        "text": "Amazing product! Exceeded all my expectations.",
+        "author": "Sarah M."
+      },
+      {
+        "text": "Best purchase I've made this year. Highly recommend!",
+        "author": "John D."
+      },
+      {
+        "text": "Outstanding quality and great customer service.",
+        "author": "Emily R."
+      }
+    ],
+    "default_faq": [
+      {
+        "question": "How does shipping work?",
+        "answer": "We ship within 1-2 business days. Tracking information will be emailed to you."
+      },
+      {
+        "question": "What's your return policy?",
+        "answer": "30-day money-back guarantee. No questions asked."
+      },
+      {
+        "question": "Is this secure?",
+        "answer": "Yes! All transactions are processed through Stripe with bank-level security."
+      }
+    ]
+  }
+}

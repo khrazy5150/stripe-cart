@@ -1,0 +1,1017 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  stripe-cart-stack - Refactored with centralized configuration
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    Description: Environment name (dev, prod, staging)
+
+  StripeKmsKeyArn:
+    Type: String
+    Default: arn:aws:kms:us-west-2:150544707159:key/58959a2e-9a28-430e-9aae-12705d68ca1e
+    Description: CMK ARN for encryption
+
+  AdminUserPoolName:
+    Type: String
+    Default: juniorbay-tenants
+    Description: Cognito User Pool name
+
+  AdminAppClientName:
+    Type: String
+    Default: juniorbay-admin-web
+    Description: Cognito App Client name
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: python3.9
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+        APP_CONFIG_TABLE: !Ref AppConfigTable
+        STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+        STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+
+Resources:
+  ############################################################
+  # NEW: Application Configuration Table
+  ############################################################
+  AppConfigTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "app-config-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: config_key
+          AttributeType: S
+        - AttributeName: environment
+          AttributeType: S
+      KeySchema:
+        - AttributeName: config_key
+          KeyType: HASH
+        - AttributeName: environment
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Purpose
+          Value: CentralizedConfiguration
+
+  ############################################################
+  # API Gateway
+  ############################################################
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "stripe-cart-stack-${Environment}"
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'POST, OPTIONS, GET, PUT, DELETE'"
+        AllowHeaders: "'Content-Type, Authorization, stripe-signature, X-Client-Id, X-Amz-Date, X-Api-Key, X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+        MaxAge: "'600'"
+      Auth:
+        Authorizers:
+          AdminCognitoAuthorizer:
+            UserPoolArn: !GetAtt AdminUserPool.Arn
+            Identity:
+              Header: Authorization
+      BinaryMediaTypes:
+        - "*/*"
+
+  ############################################################
+  # Lambda Layer
+  ############################################################
+  ShippingProvidersLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "shipping-providers-${Environment}"
+      Description: Multi-provider shipping integration
+      ContentUri: layers/shipping/
+      CompatibleRuntimes:
+        - python3.9
+        - python3.10
+        - python3.11
+      RetentionPolicy: Retain
+
+  ############################################################
+  # DynamoDB Tables
+  ############################################################
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "orders-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: order_id
+          AttributeType: S
+        - AttributeName: fulfilled
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: S
+        - AttributeName: client_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: order_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: fulfilled-created-index
+          KeySchema:
+            - AttributeName: fulfilled
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: client-created-index
+          KeySchema:
+            - AttributeName: client_id
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  CustomersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "customers-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  StripeKeysTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "stripe-keys-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: clientID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: clientID
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  ############################################################
+  # Cognito
+  ############################################################
+  AdminUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "${AdminUserPoolName}-${Environment}"
+      AutoVerifiedAttributes: [ email ]
+      UsernameAttributes: [ email ]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          RequireUppercase: true
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+
+  AdminUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref AdminUserPool
+      ClientName: !Sub "${AdminAppClientName}-${Environment}"
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      RefreshTokenValidity: 30
+      AccessTokenValidity: 60
+      IdTokenValidity: 60
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+
+  ############################################################
+  # Lambda Functions
+  ############################################################
+  
+  # Config API (Public + Admin)
+  ConfigApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: config_api.lambda_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AppConfigTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+              Resource: !GetAtt AppConfigTable.Arn
+      Events:
+        GetConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /config
+            Method: get
+        GetAdminConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/app-config
+            Method: get
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        PutAdminConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/app-config
+            Method: put
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        OptionsConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /config
+            Method: options
+        OptionsAdminConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/app-config
+            Method: options
+
+  # Stripe Cart
+  StripeCartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: stripe_cart.lambda_handler
+      Layers:
+        - !Ref ShippingProvidersLayer
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+          CUSTOMERS_TABLE: !Ref CustomersTable
+          KMS_ENC_CTX_APP: stripe-cart
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CustomersTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref AppConfigTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+                - dynamodb:Scan
+                - dynamodb:Query
+              Resource:
+                - !GetAtt StripeKeysTable.Arn
+                - !Sub "${StripeKeysTable.Arn}/index/*"
+            - Effect: Allow
+              Action: 
+                - kms:Decrypt
+                - kms:Encrypt
+              Resource: !Ref StripeKmsKeyArn
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: "*"
+      Events:
+        RootPOST:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /
+            Method: post
+        RootOPTIONS:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /
+            Method: options
+        WebhookPOST:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /webhook/{clientID}
+            Method: post
+        WebhookOPTIONS:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /webhook/{clientID}
+            Method: options
+        CreateProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/products
+            Method: post
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        UpdateProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/products/{product_id}
+            Method: put
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        GetProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/products/{product_id}
+            Method: get
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        DeleteProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/products/{product_id}
+            Method: delete
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+
+  # Orders Management
+  OrderManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: orders.lambda_handler
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref AppConfigTable
+      Events:
+        GetOrders:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /orders
+            Method: get
+        UpdateOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /orders/{order_id}
+            Method: put
+
+  # Admin Keys
+  AdminKeysFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: admin_keys.lambda_handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+              Resource: !GetAtt StripeKeysTable.Arn
+            - Effect: Allow
+              Action:
+                - kms:Encrypt
+                - kms:Decrypt
+              Resource: !Ref StripeKmsKeyArn
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: !GetAtt AppConfigTable.Arn
+      Events:
+        Get:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/stripe-keys
+            Method: get
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        Put:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/stripe-keys
+            Method: put
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        Options:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/stripe-keys
+            Method: options
+
+  # Admin Verify
+  AdminVerifyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: admin_verify.lambda_handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: !GetAtt StripeKeysTable.Arn
+            - Effect: Allow
+              Action:
+                - kms:Decrypt
+              Resource: !Ref StripeKmsKeyArn
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: !GetAtt AppConfigTable.Arn
+      Events:
+        Post:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/verify
+            Method: post
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        Options:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/verify
+            Method: options
+
+  # Admin Shipping
+  AdminShippingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: stripe_cart.lambda_handler
+      Layers:
+        - !Ref ShippingProvidersLayer
+      Timeout: 60
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+          CUSTOMERS_TABLE: !Ref CustomersTable
+          KMS_ENC_CTX_APP: stripe-cart
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:Query
+              Resource:
+                - !GetAtt StripeKeysTable.Arn
+                - !GetAtt OrdersTable.Arn
+                - !GetAtt AppConfigTable.Arn
+            - Effect: Allow
+              Action:
+                - kms:Encrypt
+                - kms:Decrypt
+              Resource: !Ref StripeKmsKeyArn
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: "*"
+      Events:
+        GetShippingConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/shipping-config
+            Method: get
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        GetRates:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/get-rates
+            Method: post
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        PutShippingConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/shipping-config
+            Method: put
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        TestShipping:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/test-shipping
+            Method: post
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        CreateLabel:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/create-label
+            Method: post
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        OptionsShippingConfig:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/shipping-config
+            Method: options
+        OptionsGetRates:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/get-rates
+            Method: options
+        OptionsTestShipping:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/test-shipping
+            Method: options
+        OptionsCreateLabel:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/create-label
+            Method: options
+
+  # Tenant Config (Email Messages)
+  TenantConfigFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: tenant_config.lambda_handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+              Resource: !GetAtt StripeKeysTable.Arn
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: !GetAtt AppConfigTable.Arn
+      Events:
+        Get:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/tenant-config
+            Method: get
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        Put:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/tenant-config
+            Method: put
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        Options:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/tenant-config
+            Method: options
+
+  # Email Service
+  EmailServiceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: email_service.lambda_handler
+      Timeout: 60
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource:
+                - !GetAtt AppConfigTable.Arn
+                - !GetAtt StripeKeysTable.Arn
+                - !GetAtt OrdersTable.Arn
+            - Effect: Allow
+              Action:
+                - kms:Decrypt
+              Resource: !Ref StripeKmsKeyArn
+      Events:
+        SendEmail:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/send-fulfillment-email
+            Method: post
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        OptionsSendEmail:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/send-fulfillment-email
+            Method: options
+
+  ############################################################
+  # S3 Bucket
+  ############################################################
+  OrderManagementBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "order-mgmt-${Environment}-${AWS::AccountId}-${AWS::Region}"
+      WebsiteConfiguration:
+        IndexDocument: orders.html
+        ErrorDocument: error.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, HEAD]
+            AllowedOrigins: ['*']
+
+  OrderManagementBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref OrderManagementBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub "${OrderManagementBucket.Arn}/*"
+
+  # Landing Page Generator (Static HTML Generator)
+  LandingPageGeneratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: lambda_page_generator.lambda_handler
+      Timeout: 60
+      MemorySize: 512
+      Runtime: python3.9
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          APP_CONFIG_TABLE: !Ref AppConfigTable
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AppConfigTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref StripeKeysTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:UpdateItem
+              Resource: !GetAtt StripeKeysTable.Arn
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:PutObjectAcl
+              # FIXED: Added -${AWS::AccountId}
+              Resource: 
+                - !Sub "arn:aws:s3:::landing-pages-${Environment}-${AWS::AccountId}/*"
+                - !Sub "arn:aws:s3:::landing-pages-preview-${Environment}-${AWS::AccountId}/*"
+            - Effect: Allow
+              Action:
+                - kms:Decrypt
+              Resource: !Ref StripeKmsKeyArn
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${LandingPagesDistribution}"
+      Events:
+        PublishLandingPage:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/publish-landing-page
+            Method: post
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+
+  # Landing Pages Management (CRUD operations)
+  LandingPagesManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: landing_pages.lambda_handler
+      Timeout: 30
+      MemorySize: 256
+      Runtime: python3.9
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          APP_CONFIG_TABLE: !Ref AppConfigTable
+          STRIPE_KEYS_TABLE: !Ref StripeKeysTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AppConfigTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+              Resource: !GetAtt StripeKeysTable.Arn
+            - Effect: Allow
+              Action:
+                - kms:Decrypt
+              Resource: !Ref StripeKmsKeyArn
+      Events:
+        GetLandingPages:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/landing-pages
+            Method: get
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        CreateLandingPage:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/landing-pages
+            Method: post
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        GetLandingPageDetails:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/landing-pages/{landing_page_id}
+            Method: get
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        UpdateLandingPage:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/landing-pages/{landing_page_id}
+            Method: put
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        ArchiveLandingPage:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/landing-pages/{landing_page_id}
+            Method: delete
+            Auth:
+              Authorizer: AdminCognitoAuthorizer
+        OptionsLandingPages:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/landing-pages
+            Method: options
+        OptionsLandingPageId:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/landing-pages/{landing_page_id}
+            Method: options
+        OptionsPublish:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/publish-landing-page
+            Method: options
+
+  ############################################################
+  # S3 Buckets for Landing Pages
+  ############################################################
+  
+  LandingPagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "landing-pages-${Environment}-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, HEAD]
+            AllowedOrigins: ['*']
+            MaxAge: 3600
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 30
+
+  LandingPagesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LandingPagesBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub "${LandingPagesBucket.Arn}/*"
+
+  # Preview bucket (optional - for draft previews)
+  LandingPagesPreviewBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "landing-pages-preview-${Environment}-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeletePreviewsAfter24Hours
+            Status: Enabled
+            ExpirationInDays: 1
+
+  LandingPagesPreviewBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LandingPagesPreviewBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub "${LandingPagesPreviewBucket.Arn}/*"
+
+  ############################################################
+  # CloudFront Distribution (for custom domain support)
+  ############################################################
+  
+  LandingPagesDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub "Landing Pages Distribution - ${Environment}"
+        DefaultCacheBehavior:
+          TargetOriginId: S3-LandingPages
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: none
+          MinTTL: 0
+          DefaultTTL: 3600
+          MaxTTL: 86400
+          Compress: true
+          # LambdaFunctionAssociations:
+          #   - EventType: origin-request
+          #     LambdaFunctionARN: !Sub "${LandingPageEdgeFunction.Version}"
+        Origins:
+          - Id: S3-LandingPages
+            DomainName: !GetAtt LandingPagesBucket.DomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+          # For custom domains, add:
+          # AcmCertificateArn: !Ref LandingPagesCertificate
+          # SslSupportMethod: sni-only
+          # MinimumProtocolVersion: TLSv1.2_2021
+
+  ############################################################
+  # Lambda@Edge Function (must be in us-east-1)
+  ############################################################
+  
+  # Note: Lambda@Edge functions must be deployed to us-east-1
+  # This is a placeholder - deploy separately if needed
+  # LandingPageEdgeFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     CodeUri: src/
+  #     Handler: lambda_edge_router.lambda_handler
+  #     Runtime: python3.9
+  #     Timeout: 5
+  #     
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+
+  ConfigEndpoint:
+    Description: Public config endpoint
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/config"
+
+  AdminConfigEndpoint:
+    Description: Admin config management endpoint
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/admin/app-config"
+
+  AppConfigTableName:
+    Description: Application Configuration Table
+    Value: !Ref AppConfigTable
+
+  OrdersTableName:
+    Description: Orders Table
+    Value: !Ref OrdersTable
+
+  OrderManagementBucketName:
+    Description: S3 bucket for order management website
+    Value: !Ref OrderManagementBucket
+
+  StripeKeysTableName:
+    Description: Stripe Keys Table
+    Value: !Ref StripeKeysTable
+
+  AdminUserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref AdminUserPool
+
+  AdminUserPoolClientId:
+    Description: Cognito App Client ID
+    Value: !Ref AdminUserPoolClient
+
+  LandingPagesBucketName:
+    Description: S3 bucket for published landing pages
+    Value: !Ref LandingPagesBucket
+    
+  LandingPagesPreviewBucketName:
+    Description: S3 bucket for preview landing pages
+    Value: !Ref LandingPagesPreviewBucket
+    
+  CloudFrontDistributionId:
+    Description: CloudFront distribution ID for landing pages
+    Value: !Ref LandingPagesDistribution
+    
+  CloudFrontDomain:
+    Description: CloudFront domain name
+    Value: !GetAtt LandingPagesDistribution.DomainName
+    
+  LandingPageGeneratorArn:
+    Description: ARN of landing page generator function
+    Value: !GetAtt LandingPageGeneratorFunction.Arn

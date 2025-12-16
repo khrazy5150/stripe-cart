@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contact Us | JuniorBay</title>
+  <!-- DNS prefetch for even earlier DNS resolution -->
+    <link rel="dns-prefetch" href="//fonts.juniorbay.com">
+    <link rel="dns-prefetch" href="//juniorbay.net">
+
+    <!-- <link rel="preconnect" href="https://fonts.juniorbay.com"> -->
+    <link rel="preconnect" href="https://juniorbay.net" crossorigin>
+    <link href="https://fonts.juniorbay.com/?family=Aileron:400,600&family=Quicksand:700&display=swap" rel="stylesheet">
+    
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="mb-3">
+    <div class="banner-blue">
+      <h1 class="center">Contact Us</h1>
+      <div class="row">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-cart icon-solid" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"></path>
+        </svg>
+        <a href="../index.html" class="text-lg link">Back to Shop</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main>
+    <div class="row-75 mb-4">
+      <form id="contact-form">
+        <p class="muted mb-4 text-lg">
+          Have a questions, comments, or just want to say hi? We'd love to hear from you! Just send us a message and we’ll get back to you shortly.
+        </p>
+        <div>
+          <label for="fullName" class="block text-sm font-medium mb-2">Full Name</label>
+          <input id="fullName" name="fullName" type="text" class="input" placeholder="Jane Doe" required>
+        </div>
+
+        <div>
+          <label for="email" class="block text-sm font-medium mb-2">Email Address</label>
+          <input id="email" name="email" type="email" class="input" placeholder="you@example.com" required>
+        </div>
+
+        <div>
+          <label for="subject" class="block text-sm font-medium mb-2">Subject</label>
+          <input id="subject" name="subject" type="text" class="input" placeholder="Question about my order" required>
+        </div>
+
+        <div>
+          <label for="message" class="block text-sm font-medium mb-2">Message</label>
+          <textarea id="message" name="message" class="input" rows="6" placeholder="How can we help?" required></textarea>
+        </div>
+
+        <button id="send-btn" type="submit" class="btn btn-primary w-full text-lg py-3">Send Message</button>
+
+        <p id="success" class="text-sm" style="color:#155724;display:none;margin:0;">
+          Thanks! Your message has been sent.
+        </p>
+        <p id="error" class="text-sm" style="color:#dc3545;display:none;margin:0;"></p>
+      </form>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+      <div id="copyright" class="text-md">
+        &copy; <span id="year"></span> Junior Bay Corporation - All rights reserved.
+      </div>
+      <div class="footer-links text-sm">
+        <a href="../contact/">Contact Us</a> | 
+        <a href="../terms/">Terms and Conditions</a> | 
+        <a href="../privacy/">Privacy Policy</a>
+      </div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    const API_ENDPOINT = "https://z0cp6zy7ok.execute-api.us-west-2.amazonaws.com/prod/contact"; // <— replace
+
+    const form = document.getElementById("contact-form");
+    const btn = document.getElementById("send-btn");
+    const ok = document.getElementById("success");
+    const err = document.getElementById("error");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      ok.style.display = "none";
+      err.style.display = "none";
+      btn.disabled = true;
+
+      const payload = {
+        fullName: form.fullName.value.trim(),
+        email: form.email.value.trim(),
+        subject: form.subject.value.trim(),
+        message: form.message.value.trim()
+      };
+
+      // naive client validation
+      if (!payload.fullName || !payload.email || !payload.subject || !payload.message) {
+        err.textContent = "Please complete all fields.";
+        err.style.display = "block";
+        btn.disabled = false;
+        return;
+      }
+
+      try {
+        const res = await fetch(API_ENDPOINT, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error(t || `Request failed (${res.status})`);
+        }
+
+        ok.style.display = "block";
+        form.reset();
+      } catch (e2) {
+        err.textContent = e2.message || "Something went wrong. Please try again.";
+        err.style.display = "block";
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

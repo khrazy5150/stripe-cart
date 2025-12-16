@@ -1,0 +1,34 @@
+:root {
+    --background: hsl(0, 0%, 100%);
+    --foreground: hsl(0, 0, 0);
+    --card: hsl(0, 0%, 100%);
+    --card-foreground: hsl(150, 60%, 15%);
+    --cool: hsl(217, 91%, 60%);
+    --primary: hsl(150, 70%, 25%);
+    --primary-foreground: hsl(0, 0%, 100%);
+    --secondary: hsl(150, 15%, 95%);
+    --secondary-foreground: hsl(150, 60%, 15%);
+    --muted: hsl(150, 15%, 96%);
+    --muted-foreground: hsl(215.4 16.3% 46.9%);
+    --accent: hsl(43, 95%, 55%);
+    --accent-foreground: hsl(150, 60%, 15%);
+    --destructive: hsl(0, 85%, 55%);
+    --destructive-foreground: hsl(0, 0%, 100%);
+    --border: hsl(150, 20%, 90%);
+    --radius: 0.75rem;
+    
+    --gradient-hero: linear-gradient(135deg, hsl(150, 70%, 25%) 0%, hsl(150, 65%, 35%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(150, 15%, 98%) 100%);
+    --gradient-urgent: linear-gradient(90deg, hsl(0, 85%, 50%) 0%, hsl(10, 85%, 55%) 100%);
+    --shadow-card: 0 4px 20px -2px hsl(150, 70%, 25%, 0.1);
+    --shadow-hover: 0 8px 30px -4px hsl(150, 70%, 25%, 0.2);
+    --shadow-urgent: 0 4px 15px -2px hsl(0, 85%, 50%, 0.3);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}

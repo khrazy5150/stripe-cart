@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b5294" />
+  <meta name="format-detection" content="telephone=no,email=no,address=no" />
+  <title>Special Offer - NAD Supplement</title>
+  <link rel="icon" type="image/x-icon" href="images/logo.png" />
+
+  <!-- Performance: early connections -->
+  <link rel="dns-prefetch" href="//fonts.juniorbay.com" />
+  <link rel="dns-prefetch" href="//juniorbay.net" />
+  <link rel="preconnect" href="https://juniorbay.net" crossorigin />
+
+  <!-- System & custom fonts -->
+  <link href="https://fonts.juniorbay.com/?family=Aileron:400,600&family=Quicksand:700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      /* Optimized fluid type scale for 340px+ */
+      --step--1: clamp(0.813rem, 0.75rem + 0.31vw, 0.938rem);
+      --step-0: clamp(0.938rem, 0.875rem + 0.31vw, 1.063rem);
+      --step-1: clamp(1.063rem, 0.969rem + 0.47vw, 1.25rem);
+      --step-2: clamp(1.25rem, 1.094rem + 0.78vw, 1.625rem);
+      --step-3: clamp(1.5rem, 1.25rem + 1.25vw, 2.125rem);
+      --step-4: clamp(1.875rem, 1.5rem + 1.88vw, 2.75rem);
+      --brand: #0b5294;
+      --accent: #ff8309;
+      --success: #10b981;
+      --danger: #dc2626;
+      --ink: #1f2937;
+      --ink-2: #374151;
+      --bg: #ffffff;
+      --radius: 12px;
+      --shadow: 0 4px 16px rgba(0,0,0,.08);
+      --safe-top: env(safe-area-inset-top);
+      --safe-right: env(safe-area-inset-right);
+      --safe-bottom: env(safe-area-inset-bottom);
+      --safe-left: env(safe-area-inset-left);
+    }
+
+    * { box-sizing: border-box; }
+    
+    html, body { height: 100%; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: Aileron, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.4;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: none;
+    }
+
+    /* Mobile-first container optimized for 340px+ */
+    .upsell-container {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: calc(12px + var(--safe-top)) 12px calc(140px + var(--safe-bottom));
+      text-align: center;
+    }
+
+    @media (min-width: 480px) {
+      .upsell-container {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+    }
+
+    .success-badge {
+      background: var(--success);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      font-weight: 700;
+      padding: .4rem .75rem;
+      border-radius: 999px;
+      margin: 0 0 .75rem 0;
+      box-shadow: var(--shadow);
+      font-size: var(--step--1);
+    }
+
+    h1 { 
+      font-size: var(--step-3); 
+      margin: .25rem 0 .25rem; 
+      line-height: 1.2;
+    }
+    h2 { 
+      font-size: var(--step-2); 
+      margin: 0 0 .75rem; 
+      line-height: 1.2;
+    }
+    h3 { 
+      font-size: var(--step-1); 
+      margin: 0 0 .5rem; 
+      line-height: 1.3;
+    }
+    h4 { 
+      font-size: var(--step-0); 
+      margin: 0 0 .5rem; 
+      font-weight: 700;
+    }
+
+    .upsell-offer {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: .875rem;
+      margin: .875rem 0 0;
+      box-shadow: var(--shadow);
+    }
+
+    @media (min-width: 480px) {
+      .upsell-offer {
+        padding: 1.25rem;
+      }
+    }
+
+    .price-comparison {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .875rem;
+      margin: 1rem 0;
+    }
+
+    @media (min-width: 600px) {
+      .price-comparison {
+        flex-direction: row;
+        justify-content: center;
+      }
+    }
+
+    .product-img-wrap {
+      width: 100%;
+      max-width: min(280px, calc(100vw - 48px));
+      aspect-ratio: 1 / 1;
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(255,255,255,.12);
+    }
+    
+    @media (min-width: 480px) {
+      .product-img-wrap {
+        max-width: 320px;
+      }
+    }
+    
+    .product-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .price-box {
+      color: #111;
+      background: #fff;
+      border-radius: 12px;
+      padding: .875rem;
+      width: 100%;
+      max-width: 100%;
+      box-shadow: var(--shadow);
+    }
+
+    @media (min-width: 480px) {
+      .price-box {
+        padding: 1.125rem;
+        max-width: 360px;
+      }
+    }
+
+    .fire-sale {
+      color: var(--accent);
+      font-weight: 700;
+      font-size: var(--step-0);
+      padding-bottom: .25rem;
+    }
+
+    .upsell-price {
+      display: inline-block;
+      background: #fffd5c;
+      color: #111;
+      padding: .3rem .55rem;
+      border-radius: 8px;
+      font-weight: 800;
+      line-height: 1.1;
+      font-size: clamp(1.875rem, 8vw, 3rem);
+      letter-spacing: .5px;
+    }
+    
+    .upsell-savings { 
+      font-size: var(--step-0); 
+      margin-top: .35rem;
+      font-weight: 600;
+    }
+
+    .countdown-upsell {
+      background: var(--danger);
+      color: #fff;
+      padding: .75rem .875rem;
+      border-radius: 10px;
+      margin: 1rem auto 0;
+      font-weight: 800;
+      width: 100%;
+      max-width: 100%;
+      box-shadow: var(--shadow);
+      font-size: var(--step--1);
+      line-height: 1.4;
+    }
+
+    @media (min-width: 480px) {
+      .countdown-upsell {
+        font-size: var(--step-0);
+        max-width: 480px;
+      }
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 1rem 0 0;
+      text-align: left;
+      display: grid;
+      gap: .5rem;
+      font-size: var(--step--1);
+    }
+    
+    @media (min-width: 480px) {
+      ul {
+        font-size: var(--step-0);
+      }
+    }
+    
+    ul li { 
+      display: flex; 
+      gap: .5rem; 
+      align-items: flex-start;
+      line-height: 1.4;
+    }
+    ul li::before { 
+      content: "✓"; 
+      color: var(--success); 
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    .btn-upsell {
+      -webkit-appearance: none;
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 800;
+      border-radius: 10px;
+      padding: .875rem 1rem;
+      box-shadow: var(--shadow);
+      transition: transform .08s ease, box-shadow .2s ease;
+      touch-action: manipulation;
+      font-size: clamp(0.938rem, 4vw, 1.125rem);
+      min-height: 48px;
+      line-height: 1.3;
+    }
+    
+    @media (min-width: 480px) {
+      .btn-upsell {
+        padding: 1rem 1.25rem;
+      }
+    }
+    
+    .btn-upsell:active { 
+      transform: translateY(1px) scale(.997); 
+      box-shadow: 0 2px 10px rgba(0,0,0,.12); 
+    }
+
+    .btn-accept {
+      background: var(--brand);
+      color: #fff;
+    }
+    .btn-accept:hover { filter: brightness(1.05); }
+    
+    .btn-decline {
+      background: transparent;
+      color: var(--brand);
+      text-decoration: underline;
+      font-weight: 700;
+      box-shadow: none;
+      padding: .625rem .5rem;
+      min-height: 44px;
+    }
+
+    /* Sticky bottom CTA */
+    .sticky-cta {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: .5rem max(12px, var(--safe-left)) calc(.5rem + var(--safe-bottom)) max(12px, var(--safe-right));
+      background: rgba(255,255,255,.95);
+      backdrop-filter: saturate(180%) blur(10px);
+      box-shadow: 0 -4px 16px rgba(0,0,0,.1);
+      z-index: 50;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: .5rem;
+    }
+    .sticky-cta .btn-upsell { width: 100%; }
+    .sticky-cta .fine-print {
+      margin-top: .3rem;
+      font-size: var(--step--1);
+      color: var(--ink-2);
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    /* Status messages */
+    .status-message {
+      margin: 0.75rem auto;
+      padding: .75rem;
+      border-radius: 8px;
+      display: none;
+      max-width: 100%;
+      font-size: var(--step--1);
+      line-height: 1.4;
+    }
+    
+    #upsell-error {
+      color: #fff;
+      background: var(--danger);
+    }
+    
+    #upsell-success {
+      color: #fff;
+      background: var(--success);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="upsell-container" id="top">
+    <div class="success-badge" aria-live="polite" role="status">
+      <span aria-hidden="true">✓</span> Order Confirmed!
+    </div>
+
+    <h1>Wait! Before you go…</h1>
+    <h2>🎉 Exclusive One‑Time Offer</h2>
+
+    <section class="upsell-offer" aria-labelledby="offer-title">
+      <h3 id="offer-title">Add Another NAD+ Supplement for Just $27</h3>
+      <p style="margin: .25rem 0 0.75rem; font-size: var(--step--1);">That's 18% OFF the regular price — only available right now!</p>
+
+      <div class="price-comparison">
+        <div class="product-img-wrap">
+          <img src="https://images.juniorbay.net/photos/0Girf25jgWm/small.jpg" alt="NAD Supplement — One Pouch" loading="lazy" decoding="async" />
+        </div>
+
+        <div class="price-box">
+          <div class="fire-sale">🔥 Your Special Price</div>
+          <div class="upsell-price" aria-label="Offer price twenty seven dollars">$27.00</div>
+          <div class="upsell-savings" aria-label="You save six dollars">Save $6!</div>
+        </div>
+      </div>
+
+      <div class="countdown-upsell" role="timer" aria-live="polite">
+        ⏰ This offer expires in: <span id="upsell-countdown" style="font-family: monospace; font-weight: bold;">60:00</span>
+      </div>
+
+      <div style="margin: .75rem 0 0;">
+        <h4>Why add another supplement?</h4>
+        <ul>
+          <li>Best results when taken for at least 2 months</li>
+          <li>Save money vs. ordering separately</li>
+          <li>Share with family or friends</li>
+          <li>Premium quality + free shipping</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Status messages -->
+    <div id="upsell-error" class="status-message"></div>
+    <div id="upsell-success" class="status-message"></div>
+  </main>
+
+  <!-- Sticky bottom CTA -->
+  <div class="sticky-cta" id="sticky-cta">
+    <button id="accept-upsell-sticky" class="btn-upsell btn-accept">Yes! Add Another for $27</button>
+    <a href="#" class="btn-upsell btn-decline" id="decline-upsell" aria-label="No thanks, continue to confirmation">
+      No thanks, continue to confirmation
+    </a>
+    <div class="fine-print">Limited offer. Expires when timer hits zero.</div>
+  </div>
+
+  <script src="https://js.stripe.com/v3/" defer></script>
+  <script>
+    // Utilities
+    const qs = (s, r = document) => r.querySelector(s);
+
+    function getUrlParameter(name) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    }
+
+    // Config from URL or defaults
+    const sessionId = getUrlParameter('session_id');
+    const url = new URL(location.href);
+    const clientID = url.searchParams.get('clientID') || 'd831c360-00e1-706a-6d3a-2a5361c20df6';
+    const baseUrl  = url.searchParams.get('baseUrl')  || 'https://api-dev.juniorbay.com';
+
+    let sessionData = null;
+    let processing = false;
+
+    // Countdown
+    let countdown = 60;
+    const countdownElement = qs('#upsell-countdown');
+    function startCountdown() {
+      const interval = setInterval(() => {
+        countdown--;
+        const m = Math.floor(countdown / 60).toString().padStart(2,'0');
+        const s = (countdown % 60).toString().padStart(2,'0');
+        countdownElement.textContent = `${m}:${s}`;
+        if (countdown <= 0) {
+          clearInterval(interval);
+          goToThankYou();
+        }
+      }, 1000);
+    }
+
+    function goToThankYou() {
+      const ty = new URL('thank-you.html', location.href);
+      ty.searchParams.set('session_id', sessionId || '');
+      ty.searchParams.set('clientID', clientID || '');
+      ty.searchParams.set('baseUrl', baseUrl || '');
+      location.href = ty.toString();
+    }
+
+    // Load session details
+    async function loadSessionDetails() {
+      if (!sessionId) {
+        console.error('No session_id in URL');
+        location.href = 'index.html';
+        return;
+      }
+      try {
+        const response = await fetch(
+          `${baseUrl}/api/upsell-session?session_id=${encodeURIComponent(sessionId)}&clientID=${encodeURIComponent(clientID)}`
+        );
+        if (!response.ok) throw new Error('Failed to load session details');
+
+        sessionData = await response.json();
+        if (sessionData.has_upsell === false) return goToThankYou();
+        if (!sessionData.upsell_price_id) {
+          const warn = document.getElementById('upsell-error');
+          if (warn) {
+            warn.textContent = 'Upsell configuration error. Redirecting...';
+            warn.style.display = 'block';
+          }
+          setTimeout(goToThankYou, 2000);
+          return;
+        }
+        if (sessionData.upsell_offer_text) {
+          const cleanText = String(sessionData.upsell_offer_text).replace(/^"|"$/g, '');
+          const btn = qs('#accept-upsell-sticky');
+          if (btn) btn.textContent = cleanText;
+        }
+      } catch (e) {
+        console.error('Error loading session:', e);
+        const el = document.getElementById('upsell-error');
+        if (el) {
+          el.textContent = 'Unable to load offer details. Redirecting...';
+          el.style.display = 'block';
+        }
+        setTimeout(goToThankYou, 2000);
+      }
+    }
+
+    // Process the upsell
+    async function processUpsell() {
+      if (processing) return;
+      if (!sessionData) return alert('Session data not loaded');
+      if (!sessionData.upsell_price_id) {
+        alert('Upsell is not available for this order.');
+        return goToThankYou();
+      }
+
+      processing = true;
+      const buttons = [qs('#accept-upsell-sticky')].filter(Boolean);
+      const originals = buttons.map(b => b.textContent);
+      buttons.forEach(b => { b.disabled = true; b.textContent = 'Processing…'; });
+
+      try {
+        const response = await fetch(`${baseUrl}/api/process-upsell`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientID,
+            session_id: sessionId,
+            customer_id: sessionData.customer_id,
+            payment_method_id: sessionData.payment_method_id,
+            upsell_price_id: sessionData.upsell_price_id,
+            shipping_address: sessionData.shipping_address,
+          })
+        });
+        const result = await response.json();
+        if (result.success) {
+          const ok = document.getElementById('upsell-success');
+          if (ok) { ok.textContent = 'Upsell successful! Redirecting…'; ok.style.display = 'block'; }
+          sessionStorage.setItem('upsellComplete', JSON.stringify({
+            upsellPaymentIntentId: result.payment_intent_id,
+            originalSessionId: sessionId
+          }));
+          setTimeout(goToThankYou, 1500);
+        } else {
+          const err = document.getElementById('upsell-error');
+          if (err) { err.textContent = result.error || 'Payment failed. Please try again.'; err.style.display = 'block'; }
+          buttons.forEach((b,i)=>{ b.disabled = false; b.textContent = originals[i]; });
+          processing = false;
+        }
+      } catch (e) {
+        console.error('Error processing upsell:', e);
+        const err = document.getElementById('upsell-error');
+        if (err) { err.textContent = 'An error occurred. Please try again.'; err.style.display = 'block'; }
+        buttons.forEach((b,i)=>{ b.disabled = false; b.textContent = originals[i]; });
+        processing = false;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      startCountdown();
+      await loadSessionDetails();
+
+      const stickyAccept = qs('#accept-upsell-sticky');
+      if (stickyAccept) stickyAccept.addEventListener('click', processUpsell);
+
+      const decline = qs('#decline-upsell');
+      if (decline) decline.addEventListener('click', (e) => { e.preventDefault(); goToThankYou(); });
+    });
+  </script>
+</body>
+</html>

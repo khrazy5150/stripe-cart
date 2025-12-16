@@ -1,0 +1,153 @@
+{
+  ":lp": {
+    "L": [
+      {
+        "M": {
+          "landing_page_id": {
+            "S": "lp_abc123"
+          },
+          "page_name": {
+            "S": "Summer Sale 2025"
+          },
+          "seo_friendly_prefix": {
+            "S": "summer-sale-2025"
+          },
+          "template_type": {
+            "S": "three-tier-pricing"
+          },
+          "hero_title": {
+            "S": "Transform Your Life Today!"
+          },
+          "hero_subtitle": {
+            "S": "Choose your package"
+          },
+          "guarantee": {
+            "S": "30-day money-back guarantee"
+          },
+          "products": {
+            "L": [
+              {
+                "M": {
+                  "product_id": {
+                    "S": "prod_xyz1"
+                  },
+                  "tier_label": {
+                    "S": "Basic"
+                  },
+                  "display_order": {
+                    "N": "1"
+                  },
+                  "is_featured": {
+                    "BOOL": false
+                  },
+                  "custom_description_override": {
+                    "NULL": true
+                  }
+                }
+              }
+            ]
+          },
+          "status": {
+            "S": "draft"
+          },
+          "s3_url": {
+            "NULL": true
+          },
+          "checkout_in_subfolder": {
+            "BOOL": false
+          },
+          "analytics_pixels": {
+            "M": {
+              "google": {
+                "S": ""
+              },
+              "meta": {
+                "S": ""
+              }
+            }
+          },
+          "custom_css": {
+            "S": ""
+          },
+          "custom_js": {
+            "S": ""
+          },
+          "layout_options": {
+            "M": {
+              "show_testimonials": {
+                "BOOL": false
+              },
+              "show_faq": {
+                "BOOL": false
+              },
+              "color_scheme": {
+                "M": {
+                  "primary": {
+                    "S": "#007bff"
+                  },
+                  "accent": {
+                    "S": "#28a745"
+                  }
+                }
+              }
+            }
+          },
+          "custom_fields": {
+            "L": []
+          },
+          "email_capture_config": {
+            "M": {}
+          },
+          "analytics": {
+            "M": {
+              "views": {
+                "N": "0"
+              },
+              "conversions": {
+                "N": "0"
+              },
+              "revenue": {
+                "N": "0"
+              },
+              "last_updated": {
+                "S": "2025-01-15T10:00:00Z"
+              }
+            }
+          },
+          "ab_test_id": {
+            "NULL": true
+          },
+          "created_at": {
+            "S": "2025-01-15T10:00:00Z"
+          },
+          "updated_at": {
+            "S": "2025-01-15T10:00:00Z"
+          },
+          "published_at": {
+            "NULL": true
+          }
+        }
+      }
+    ]
+  },
+  ":plan": {
+    "M": {
+      "type": {
+        "S": "enterprise"
+      },
+      "limits": {
+        "M": {
+          "landing_pages": {
+            "N": "-1"
+          },
+          "ab_tests_concurrent": {
+            "N": "-1"
+          },
+          "custom_fields_per_page": {
+            "N": "-1"
+          }
+        }
+      }
+    }
+  }
+}

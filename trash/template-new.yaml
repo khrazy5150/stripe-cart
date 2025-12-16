@@ -1,0 +1,755 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Video Course Platform Extension - Integrates with existing Stripe multi-tenant system
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, prod]
+  StripeKmsKeyArn:
+    Type: String
+    Description: KMS key ARN used to encrypt/decrypt tenant secrets (e.g., Stripe)
+  ExistingRestApiId:
+    Type: String
+    Description: Existing REST API ID from main stack
+  ExistingUserPoolId:
+    Type: String
+    Description: Existing Cognito User Pool ID (if available, otherwise leave empty)
+    Default: ""
+
+Conditions:
+  CreateUserPool: !Equals [!Ref ExistingUserPoolId, ""]
+  UseExistingUserPool: !Not [!Equals [!Ref ExistingUserPoolId, ""]]
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 30
+    MemorySize: 512
+    Architectures: [x86_64]
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+    Tracing: Active
+
+Resources:
+  ############################################################
+  # Cognito (Optional - only if not exists)
+  ############################################################
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Condition: CreateUserPool
+    Properties:
+      UserPoolName: !Sub ${Environment}-video-course-users
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+      Schema:
+        - Name: email
+          Required: true
+          Mutable: false
+        - Name: name
+          Required: true
+          Mutable: true
+        - Name: custom:role
+          AttributeDataType: String
+          Mutable: true
+        - Name: custom:clientID
+          AttributeDataType: String
+          Mutable: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Condition: CreateUserPool
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub ${Environment}-video-course-client
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 30
+
+  ############################################################
+  # Lambda Layers
+  ############################################################
+  KmsUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "kms-utils-video-${Environment}"
+      Description: Shared KMS encryption/decryption utilities
+      ContentUri: layers/kms_utils/
+      CompatibleRuntimes: [python3.11]
+      RetentionPolicy: Retain
+
+  VideoUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "video-utils-${Environment}"
+      Description: Video processing utilities and CloudFront signing
+      ContentUri: layers/video_utils/
+      CompatibleRuntimes: [python3.11]
+      RetentionPolicy: Retain
+
+  ############################################################
+  # S3 Buckets
+  ############################################################
+  VideosBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${Environment}-video-courses-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, HEAD]
+            AllowedOrigins: ['*']
+            MaxAge: 3000
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteIncompleteUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+          - Id: TransitionToIA
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 90
+                StorageClass: STANDARD_IA
+
+  VideosBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref VideosBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowCloudFrontOAI
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${VideosBucket.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${VideoDistribution}
+
+  TranscodedVideosBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${Environment}-video-courses-transcoded-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToIA
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 30
+                StorageClass: STANDARD_IA
+
+  TranscodedVideosBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref TranscodedVideosBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowCloudFrontOAI
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${TranscodedVideosBucket.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${VideoDistribution}
+
+  ############################################################
+  # CloudFront Distribution
+  ############################################################
+  CloudFrontOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub ${Environment}-video-oac
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  CloudFrontPublicKey:
+    Type: AWS::CloudFront::PublicKey
+    Properties:
+      PublicKeyConfig:
+        Name: !Sub ${Environment}-video-key
+        EncodedKey: !Sub |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyourpublickeyhere
+          ReplaceThisWithYourActualPublicKeyGeneratedOffline
+          -----END PUBLIC KEY-----
+        CallerReference: !Sub ${Environment}-${AWS::StackName}
+
+  CloudFrontKeyGroup:
+    Type: AWS::CloudFront::KeyGroup
+    Properties:
+      KeyGroupConfig:
+        Name: !Sub ${Environment}-video-key-group
+        Items:
+          - !Ref CloudFrontPublicKey
+
+  VideoDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub ${Environment} Video Course Distribution
+        Origins:
+          - Id: S3OriginOriginal
+            DomainName: !GetAtt VideosBucket.RegionalDomainName
+            OriginAccessControlId: !Ref CloudFrontOriginAccessControl
+            S3OriginConfig: {}
+          - Id: S3OriginTranscoded
+            DomainName: !GetAtt TranscodedVideosBucket.RegionalDomainName
+            OriginAccessControlId: !Ref CloudFrontOriginAccessControl
+            S3OriginConfig: {}
+        DefaultCacheBehavior:
+          TargetOriginId: S3OriginTranscoded
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          TrustedKeyGroups:
+            - !Ref CloudFrontKeyGroup
+          Compress: true
+          DefaultTTL: 86400
+          MaxTTL: 31536000
+          MinTTL: 0
+        CacheBehaviors:
+          - PathPattern: original/*
+            TargetOriginId: S3OriginOriginal
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD]
+            TrustedKeyGroups:
+              - !Ref CloudFrontKeyGroup
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+            Compress: true
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
+  ############################################################
+  # DynamoDB Tables
+  ############################################################
+  CoursesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${Environment}-Courses
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: clientID
+          AttributeType: S
+        - AttributeName: courseId
+          AttributeType: S
+        - AttributeName: instructorId
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: S
+      KeySchema:
+        - AttributeName: clientID
+          KeyType: HASH
+        - AttributeName: courseId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: InstructorIndex
+          KeySchema:
+            - AttributeName: instructorId
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  EnrollmentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${Environment}-Enrollments
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: clientID
+          AttributeType: S
+        - AttributeName: enrollmentId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: courseId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: clientID
+          KeyType: HASH
+        - AttributeName: enrollmentId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: UserIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: courseId
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: CourseIndex
+          KeySchema:
+            - AttributeName: courseId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  VideoAnalyticsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${Environment}-VideoAnalytics
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: clientID
+          AttributeType: S
+        - AttributeName: analyticsId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: videoId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: clientID
+          KeyType: HASH
+        - AttributeName: analyticsId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: UserVideoIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: videoId
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: VideoIndex
+          KeySchema:
+            - AttributeName: videoId
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  ############################################################
+  # MediaConvert Role
+  ############################################################
+  MediaConvertRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: mediaconvert.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Policies:
+        - PolicyName: MediaConvertS3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub ${VideosBucket.Arn}/*
+                  - !Sub ${TranscodedVideosBucket.Arn}/*
+
+  ############################################################
+  # Secrets Manager
+  ############################################################
+  CloudFrontPrivateKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${Environment}-cloudfront-private-key
+      Description: CloudFront private key for signed URLs
+      SecretString: |
+        {
+          "privateKey": "-----BEGIN RSA PRIVATE KEY-----\nYour private key here\n-----END RSA PRIVATE KEY-----"
+        }
+
+  ############################################################
+  # Lambda Functions
+  ############################################################
+
+  CourseManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: course_management.lambda_handler
+      Layers:
+        - !Ref KmsUtilsLayer
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CoursesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref EnrollmentsTable
+        - Statement:
+            - Effect: Allow
+              Action: [kms:Decrypt, kms:DescribeKey]
+              Resource: !Ref StripeKmsKeyArn
+      Environment:
+        Variables:
+          COURSES_TABLE: !Ref CoursesTable
+          ENROLLMENTS_TABLE: !Ref EnrollmentsTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+      Events:
+        CreateCourse:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /admin/courses
+            Method: POST
+        GetCourse:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /admin/courses/{courseId}
+            Method: GET
+        UpdateCourse:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /admin/courses/{courseId}
+            Method: PUT
+        ListCourses:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /admin/courses
+            Method: GET
+        PublicListCourses:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /public/courses
+            Method: GET
+
+  VideoUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: video_upload.lambda_handler
+      Timeout: 60
+      Layers:
+        - !Ref KmsUtilsLayer
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref VideosBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CoursesTable
+      Environment:
+        Variables:
+          VIDEOS_BUCKET: !Ref VideosBucket
+          COURSES_TABLE: !Ref CoursesTable
+      Events:
+        InitiateUpload:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /admin/courses/{courseId}/videos/upload
+            Method: POST
+        CompleteUpload:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /admin/courses/{courseId}/videos/{videoId}/complete
+            Method: POST
+
+  VideoTranscodeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: video_transcode.lambda_handler
+      Timeout: 900
+      MemorySize: 1024
+      Layers:
+        - !Ref VideoUtilsLayer
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref VideosBucket
+        - S3CrudPolicy:
+            BucketName: !Ref TranscodedVideosBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CoursesTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - mediaconvert:*
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - iam:PassRole
+              Resource: !GetAtt MediaConvertRole.Arn
+      Environment:
+        Variables:
+          VIDEOS_BUCKET: !Ref VideosBucket
+          TRANSCODED_BUCKET: !Ref TranscodedVideosBucket
+          COURSES_TABLE: !Ref CoursesTable
+          MEDIACONVERT_ROLE: !GetAtt MediaConvertRole.Arn
+      Events:
+        S3Upload:
+          Type: S3
+          Properties:
+            Bucket: !Ref VideosBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: courses/
+                  - Name: suffix
+                    Value: .mp4
+
+  VideoStreamFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: video_stream.lambda_handler
+      Layers:
+        - !Ref KmsUtilsLayer
+        - !Ref VideoUtilsLayer
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref CoursesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref EnrollmentsTable
+        - Statement:
+            - Effect: Allow
+              Action: [secretsmanager:GetSecretValue]
+              Resource: !Ref CloudFrontPrivateKeySecret
+      Environment:
+        Variables:
+          COURSES_TABLE: !Ref CoursesTable
+          ENROLLMENTS_TABLE: !Ref EnrollmentsTable
+          CLOUDFRONT_DOMAIN: !GetAtt VideoDistribution.DomainName
+          CLOUDFRONT_KEY_PAIR_ID: !Ref CloudFrontPublicKey
+          PRIVATE_KEY_SECRET: !Ref CloudFrontPrivateKeySecret
+      Events:
+        GetVideoUrl:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /api/videos/{videoId}/stream
+            Method: GET
+        GetPlaylist:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /api/videos/{videoId}/playlist
+            Method: GET
+
+  EnrollmentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: enrollment.lambda_handler
+      Layers:
+        - !Ref KmsUtilsLayer
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EnrollmentsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref CoursesTable
+        - Statement:
+            - Effect: Allow
+              Action: [kms:Decrypt]
+              Resource: !Ref StripeKmsKeyArn
+      Environment:
+        Variables:
+          ENROLLMENTS_TABLE: !Ref EnrollmentsTable
+          COURSES_TABLE: !Ref CoursesTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+      Events:
+        CreateEnrollment:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /admin/courses/{courseId}/enroll
+            Method: POST
+        GetEnrollment:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /api/enrollments/{enrollmentId}
+            Method: GET
+        ListUserEnrollments:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /api/my-enrollments
+            Method: GET
+
+  VideoAnalyticsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: video_analytics.lambda_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref VideoAnalyticsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref CoursesTable
+      Environment:
+        Variables:
+          ANALYTICS_TABLE: !Ref VideoAnalyticsTable
+          COURSES_TABLE: !Ref CoursesTable
+      Events:
+        TrackView:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /api/analytics/track
+            Method: POST
+        GetVideoStats:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /admin/analytics/videos/{videoId}
+            Method: GET
+        GetCourseStats:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /admin/analytics/courses/{courseId}
+            Method: GET
+        GetUserProgress:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /api/analytics/my-progress
+            Method: GET
+
+  CourseCheckoutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: course_checkout.lambda_handler
+      Layers:
+        - !Ref KmsUtilsLayer
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref CoursesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EnrollmentsTable
+        - Statement:
+            - Effect: Allow
+              Action: [kms:Decrypt, kms:DescribeKey]
+              Resource: !Ref StripeKmsKeyArn
+      Environment:
+        Variables:
+          COURSES_TABLE: !Ref CoursesTable
+          ENROLLMENTS_TABLE: !Ref EnrollmentsTable
+          STRIPE_KMS_KEY_ARN: !Ref StripeKmsKeyArn
+          ENVIRONMENT: !Ref Environment
+      Events:
+        CreateCourseCheckout:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /api/courses/{courseId}/checkout
+            Method: POST
+        FreeCourseEnrollment:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExistingRestApiId
+            Path: /api/courses/{courseId}/enroll-free
+            Method: POST
+
+Outputs:
+  VideosBucketName:
+    Description: S3 bucket for video storage
+    Value: !Ref VideosBucket
+    Export:
+      Name: !Sub ${Environment}-VideosBucketName
+
+  TranscodedVideosBucketName:
+    Description: S3 bucket for transcoded videos
+    Value: !Ref TranscodedVideosBucket
+    Export:
+      Name: !Sub ${Environment}-TranscodedVideosBucketName
+
+  CloudFrontDomain:
+    Description: CloudFront distribution domain
+    Value: !GetAtt VideoDistribution.DomainName
+    Export:
+      Name: !Sub ${Environment}-VideoCloudfrontDomain
+
+  CoursesTableName:
+    Description: Courses DynamoDB table
+    Value: !Ref CoursesTable
+    Export:
+      Name: !Sub ${Environment}-CoursesTableName
+
+  EnrollmentsTableName:
+    Description: Enrollments DynamoDB table
+    Value: !Ref EnrollmentsTable
+    Export:
+      Name: !Sub ${Environment}-EnrollmentsTableName
+
+  VideoAnalyticsTableName:
+    Description: Video Analytics DynamoDB table
+    Value: !Ref VideoAnalyticsTable
+    Export:
+      Name: !Sub ${Environment}-VideoAnalyticsTableName
+
+  UserPoolId:
+    Condition: CreateUserPool
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+    Export:
+      Name: !Sub ${Environment}-VideoCourseUserPoolId
+
+  UserPoolClientId:
+    Condition: CreateUserPool
+    Description: Cognito User Pool Client ID
+    Value: !Ref UserPoolClient
+    Export:
+      Name: !Sub ${Environment}-VideoCourseUserPoolClientId

@@ -1,0 +1,84 @@
+html {
+    font-size: 62.5%;
+}
+
+:root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 217 91% 60%;
+    --urgency: 0 100% 50%;
+    --urgency-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 93% 58%;
+    --warning-foreground: 222.2 84% 4.9%;
+    --radius: 1rem;
+    
+    --cool: hsl(217, 91%, 60%);
+    --destructive: hsl(0, 85%, 55%);
+    --destructive-foreground: hsl(0, 0%, 100%);
+    
+    --gradient-hero: linear-gradient(135deg, hsl(150, 70%, 25%) 0%, hsl(150, 65%, 35%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(150, 15%, 98%) 100%);
+    --gradient-urgent: linear-gradient(90deg, hsl(0, 85%, 50%) 0%, hsl(10, 85%, 55%) 100%);
+    --shadow-card: 0 4px 20px -2px hsl(150, 70%, 25%, 0.1);
+    --shadow-hover: 0 8px 30px -4px hsl(150, 70%, 25%, 0.2);
+    --shadow-urgent: 0 4px 15px -2px hsl(0, 85%, 50%, 0.3);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.icon {
+    width: 3rem;
+    height: 3rem;
+}
+
+.banner-red {
+    padding: 1.5rem 1rem;
+    background-color: hsl(var(--urgency));
+    color: hsl(var(--urgency-foreground));
+}
+
+.banner-blue {
+    padding: 1.5rem 1rem;
+    background-color: #0b5294;
+    color: #ffffff;
+}
+
+.banner-green {
+    background-color: hsl(var(--success));
+    padding: 1.5rem 1rem;
+}
+
+.font-mono {
+    color: #ffef03;
+}
+
+.box {
+    margin: 0;
+    padding: 0;
+}
+
+.flex-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+}
+
+.text-sm {font-size: 1.4rem;}
+.center {text-align: center;}
+.semi-bold { font-weight: 600; }
+.bold { font-weight: bold; }

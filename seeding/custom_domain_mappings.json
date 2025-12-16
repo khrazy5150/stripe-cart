@@ -1,0 +1,20 @@
+{
+  "config_key": "custom_domain_mappings",
+  "environment": "prod",
+  "description": "Maps custom domains to clientIDs and landing pages",
+  "updated_at": "2025-01-15T10:00:00Z",
+  "updated_by": "admin",
+  "value": {
+    "sweetpottery.com": {
+      "clientID": "c85d5a3d-663e-4372-bc71-376881d5f63d",
+      "landing_page_map": {
+        "summer-sale": "lp_abc123",
+        "winter-promo": "lp_xyz789",
+        "": "lp_default"
+      },
+      "ssl_certificate_arn": "arn:aws:acm:us-east-1:150544707159:certificate/12345",
+      "verified": true,
+      "added_at": "2025-01-10T08:00:00Z"
+    }
+  }
+}

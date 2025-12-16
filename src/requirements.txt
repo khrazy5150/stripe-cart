@@ -1,0 +1,2 @@
+stripe==5.4.0
+requests==2.28.2

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Special Offer - NAD Supplement</title>
+    <link rel="icon" type="image/x-icon" href="images/logo.png">
+    
+    <!-- DNS prefetch for even earlier DNS resolution -->
+    <link rel="dns-prefetch" href="//fonts.juniorbay.com">
+    <link rel="dns-prefetch" href="//juniorbay.net">
+
+    <link rel="preconnect" href="https://juniorbay.net" crossorigin>
+    <link href="https://fonts.juniorbay.com/?family=Aileron:400,600&family=Quicksand:700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+        .upsell-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            text-align: center;
+        }
+        .success-badge {
+            background: #10b981;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            display: inline-block;
+            margin-bottom: 2rem;
+        }
+        .upsell-offer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 2rem;
+            color: white;
+            margin: 2rem 0;
+        }
+        .price-comparison {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        .price-box {
+            color: #333;
+            padding: 1.5rem;
+        }
+        .fire-sale {
+            padding: 1rem;
+            color: #ff8309;
+            font-weight: 600;
+        }
+        .upsell-price {
+            font-size: 6rem;
+            font-weight: bold;
+            padding: 1rem;
+            background-color: yellow;
+            color: #333;
+        }
+        .countdown-upsell {
+            background: #dc2626;
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+            font-weight: bold;
+        }
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        .btn-upsell {
+            padding: 2rem;
+            border-radius: 8px;
+            font-size: 2.8rem;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .btn-accept {
+            background: #0b5294;
+            color: white;
+            border: none;
+        }
+        .btn-accept:hover {
+            background: #059669;
+        }
+        .btn-decline {
+            background: transparent;
+            color: blue;
+            font-size: 1.8rem;
+            text-decoration: underline;
+        }
+        ul {
+            margin-top: 2rem;
+        }
+        @media (max-width: 768px) {
+            .price-comparison {
+                flex-direction: column;
+                align-items: center;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <div class="min-h-screen">
+        <main class="upsell-container">
+            <div class="success-badge">
+                ✓ Order Confirmed! Thank you for your purchase!
+            </div>
+
+            <h1>Wait! Before you go...</h1>
+            <h2>🎉 Exclusive One-Time Offer</h2>
+
+            <div class="upsell-offer">
+                <h3>Add Another NAD+ Supplement for Just $27</h3>
+                <p>That's 18% OFF the regular price - This offer is only available right now!</p>
+                
+                <div class="price-comparison">
+                    <img src="images/1-pouch.png" width="420" height="420" alt="NAD Supplement - One Pouch" />
+                    <div class="price-box">
+                        <div class="fire-sale">🔥 Your Special Price</div>
+                        <div class="upsell-price">$27.00</div>
+                        <div class="upsell-savings">Save $6!</div>
+                    </div>
+                </div>
+
+                <div class="countdown-upsell">
+                    ⏰ This exclusive offer expires in: <span id="upsell-countdown" class="font-mono font-bold">01:00</span>
+                </div>
+
+                <div style="margin: 1.5rem 0;">
+                    <h4>Why add another supplement?</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li>✓ You will notice best results when taken for at least 2 months</li>
+                        <li>✓ Save money compared to ordering separately</li>
+                        <li>✓ Share with a family member or friend</li>
+                        <li>✓ Same premium quality and free shipping</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button id="accept-upsell" class="btn-upsell btn-accept">
+                    Yes! Add Another for $27
+                </button>
+                <a href="#" class="btn-upsell btn-decline">
+                    No thanks, continue to confirmation
+                </a>
+            </div>
+
+            <div id="upsell-error" style="color: #dc2626; margin-top: 1rem; display: none;"></div>
+            <div id="upsell-success" style="color: #10b981; margin-top: 1rem; display: none;"></div>
+        </main>
+    </div>
+    <script>
+        // Get URL parameters
+        function getUrlParameter(name) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+
+        // Get config from URL or use defaults
+        const sessionId = getUrlParameter('session_id');
+        const url = new URL(location.href);
+        const clientID = url.searchParams.get('clientID') || 'd831c360-00e1-706a-6d3a-2a5361c20df6';
+        const baseUrl = url.searchParams.get('baseUrl') || 'https://api-dev.juniorbay.com';
+
+        let sessionData = null;
+        let processing = false;
+
+        // Countdown timer
+        let countdown = 60;
+        const countdownElement = document.getElementById('upsell-countdown');
+        function startCountdown() {
+            const interval = setInterval(() => {
+                countdown--;
+                const minutes = Math.floor(countdown / 60);
+                const seconds = countdown % 60;
+                countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    goToThankYou();
+                }
+            }, 1000);
+        }
+
+        function goToThankYou() {
+            const ty = new URL('thank-you.html', location.href);
+            ty.searchParams.set('session_id', sessionId || '');
+            ty.searchParams.set('clientID', clientID || '');
+            ty.searchParams.set('baseUrl', baseUrl || '');
+            window.location.href = ty.toString();
+        }
+
+        // Load session details
+        async function loadSessionDetails() {
+            if (!sessionId) {
+                console.error('No session_id in URL');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                // ✅ FIX: Use the correct endpoint that retrieves from Stripe (not DDB cache)
+                // The endpoint was defined in your lambda_handler but we were calling the wrong path
+                const response = await fetch(
+                    `${baseUrl}/api/upsell-session?session_id=${encodeURIComponent(sessionId)}&clientID=${encodeURIComponent(clientID)}`
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to load session details');
+                }
+
+                sessionData = await response.json();
+                console.log('Session data loaded:', sessionData);
+                console.log('Full response keys:', Object.keys(sessionData));
+
+                // ✅ FIXED: Check has_upsell flag from backend
+                if (sessionData.has_upsell === false) {
+                    console.log('No upsell available for this session');
+                    goToThankYou();
+                    return;
+                }
+
+                // ✅ FIXED: If has_upsell is true but no price_id, show clear error
+                if (!sessionData.upsell_price_id) {
+                    console.error('Session marked for upsell but missing upsell_price_id');
+                    const warn = document.getElementById('upsell-error');
+                    warn.textContent = 'Upsell configuration error. Redirecting to confirmation...';
+                    warn.style.display = 'block';
+                    setTimeout(() => goToThankYou(), 3000);
+                    return;
+                }
+
+                // Update CTA text if provided
+                if (sessionData.upsell_offer_text) {
+                    const cleanText = String(sessionData.upsell_offer_text).replace(/^"|"$/g, '');
+                    document.getElementById('accept-upsell').textContent = cleanText;
+                }
+
+            } catch (error) {
+                console.error('Error loading session:', error);
+                const el = document.getElementById('upsell-error');
+                el.textContent = 'Unable to load offer details. Redirecting...';
+                el.style.display = 'block';
+                setTimeout(() => goToThankYou(), 3000);
+            }
+        }
+
+        // Process the upsell
+        async function processUpsell() {
+            if (processing) return;
+            if (!sessionData) {
+                alert('Session data not loaded');
+                return;
+            }
+
+            if (!sessionData.upsell_price_id) {
+                alert('Upsell is not available for this order.');
+                goToThankYou();
+                return;
+            }
+            
+            processing = true;
+            const acceptButton = document.getElementById('accept-upsell');
+            const originalText = acceptButton.textContent;
+            acceptButton.disabled = true;
+            acceptButton.textContent = 'Processing...';
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/process-upsell`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        clientID: clientID,
+                        session_id: sessionId,
+                        customer_id: sessionData.customer_id,
+                        payment_method_id: sessionData.payment_method_id,
+                        upsell_price_id: sessionData.upsell_price_id,
+                        shipping_address: sessionData.shipping_address,
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('upsell-success').textContent = 'Upsell successful! Redirecting...';
+                    document.getElementById('upsell-success').style.display = 'block';
+                    
+                    sessionStorage.setItem('upsellComplete', JSON.stringify({
+                        upsellPaymentIntentId: result.payment_intent_id,
+                        originalSessionId: sessionId
+                    }));
+                    
+                    setTimeout(() => {
+                        goToThankYou();
+                    }, 2000);
+                } else {
+                    document.getElementById('upsell-error').textContent = result.error || 'Payment failed. Please try again.';
+                    document.getElementById('upsell-error').style.display = 'block';
+                    acceptButton.disabled = false;
+                    acceptButton.textContent = originalText;
+                    processing = false;
+                }
+                
+            } catch (error) {
+                console.error('Error processing upsell:', error);
+                document.getElementById('upsell-error').textContent = 'An error occurred. Please try again.';
+                document.getElementById('upsell-error').style.display = 'block';
+                acceptButton.disabled = false;
+                acceptButton.textContent = originalText;
+                processing = false;
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async () => {
+            startCountdown();
+            await loadSessionDetails();
+            
+            document.getElementById('accept-upsell').addEventListener('click', processUpsell);
+
+            const decline = document.querySelector('.btn-decline');
+            if (decline) {
+                decline.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    goToThankYou();
+                });
+            }
+        });
+    </script>
+</body>
+</html>

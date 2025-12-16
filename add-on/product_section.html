@@ -1,0 +1,157 @@
+<!-- Product Form View -->
+                <div id="productFormSection" class="hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h1 class="card-title" id="productFormTitle">Create New Product</h1>
+                        </div>
+                        <div class="card-content">
+                            <div id="productFormMsg" class="mt12 muted"></div>
+                            <form id="productForm" onsubmit="return false;">
+                                <!-- Basic Information -->
+                                <h2>Basic Information</h2>
+                                <div class="form-group">
+                                    <label for="productName">Product Name *</label>
+                                    <input type="text" id="productName" required placeholder="e.g. Premium Widget">
+                                </div>
+
+                                <!-- Price Management (only for editing existing products) -->
+                                <div id="priceManagementSection" class="hidden">
+                                    <h2 class="mt24">Price Management</h2>
+                                    <div class="muted mb12">Existing prices (prices cannot be edited, only added or archived)</div>
+                                    <div id="existingPricesContainer"></div>
+                                    <button type="button" id="btnAddNewPrice" class="small secondary mt12" style="width: auto;">+ Add New Price</button>
+                                </div>
+
+                                <!-- Pricing Section (only for new products) -->
+                                <div id="pricesSection">
+                                    <h2 class="mt24">Pricing</h2>
+                                    <div class="muted mb12">Add one or more prices for this product</div>
+                                    <div id="pricesContainer"></div>
+                                    <button type="button" id="btnAddPrice" class="small secondary mt12" style="width: auto;">+ Add Another Price</button>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="productDescription">Description</label>
+                                    <textarea id="productDescription" rows="3" placeholder="Describe your product..."></textarea>
+                                </div>
+                                
+                                <!-- Product Type (Physical/Digital) -->
+                                <h2 class="mt24">Product Type</h2>
+                                <div class="form-group">
+                                    <label for="productType">Type</label>
+                                    <select id="productType">
+                                        <option value="physical">Physical - Requires shipping</option>
+                                        <option value="non-physical">Non-Physical - Digital/Service (no shipping)</option>
+                                    </select>
+                                    <small class="muted">Physical products require shipping configuration. Non-physical products skip shipping.</small>
+                                </div>
+
+                                <!-- Product Category (Funnel Position) -->
+                                <h2 class="mt16">Product Category</h2>
+                                <div class="form-group">
+                                    <label for="productCategory">Category</label>
+                                    <select id="productCategory">
+                                        <option value="standard">Standard - Default Product</option>
+                                        <option value="basic">Basic - Entry Level (First in funnel, with upsell)</option>
+                                        <option value="upsell">Upsell - Post-Purchase Discounted Offer</option>
+                                        <option value="mid-tier">Mid-Tier - Middle Option</option>
+                                        <option value="premium">Premium - High-End Offer (Last in funnel)</option>
+                                        <option value="subscription">Subscription - Recurring Payment</option>
+                                        <option value="addon">Add-On - Supplementary Product</option>
+                                        <option value="bundle">Bundle - Multi-Product Package</option>
+                                    </select>
+                                    <small class="muted">Defines product position in sales funnel and landing page display order</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label style="display:flex;align-items:center;gap:8px;">
+                                        <input type="checkbox" id="productActive" checked style="width:auto;"/> 
+                                        Active (visible in Stripe)
+                                    </label>
+                                </div>
+
+                                <!-- Product Images -->
+                                <h2 class="mt24">Product Images</h2>
+                                <div class="form-group">
+                                    <label for="productImages">Image URLs (one per line)</label>
+                                    <textarea id="productImages" rows="3" placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"></textarea>
+                                    <small class="muted">Enter direct image URLs, one per line</small>
+                                </div>
+
+                                <!-- Package Dimensions -->
+                                <h2 class="mt24">Package Dimensions (for physical products only)</h2>
+                                <div class="grid grid-two">
+                                    <div>
+                                        <label for="packageLength">Length (inches)</label>
+                                        <input type="number" id="packageLength" value="10" min="1" step="0.1">
+                                    </div>
+                                    <div>
+                                        <label for="packageWidth">Width (inches)</label>
+                                        <input type="number" id="packageWidth" value="8" min="1" step="0.1">
+                                    </div>
+                                    <div>
+                                        <label for="packageHeight">Height (inches)</label>
+                                        <input type="number" id="packageHeight" value="4" min="1" step="0.1">
+                                    </div>
+                                    <div>
+                                        <label for="packageWeight">Weight (pounds)</label>
+                                        <input type="number" id="packageWeight" value="1" min="0.1" step="0.1">
+                                    </div>
+                                </div>
+
+                                <!-- Upsell Configuration -->
+                                <div id="upsellConfigSection" class="hidden">
+                                    <h2 class="mt24">Upsell Configuration</h2>
+                                    <div class="muted mb12">Select a product to offer as an upsell after purchase</div>
+                                    
+                                    <!-- Hidden fields to store selected values -->
+                                    <input type="hidden" id="upsellProductId">
+                                    <input type="hidden" id="upsellPriceId">
+                                    
+                                    <!-- Scrollable product selection -->
+                                    <div id="upsellProductsContainer" class="upsell-products-container">
+                                        <div class="muted">Loading products...</div>
+                                    </div>
+                                    
+                                    <div class="form-group mt12">
+                                        <label for="upsellOfferText">Upsell Offer Text</label>
+                                        <input type="text" id="upsellOfferText" placeholder="Yes, I accept the offer for only {{upsell_price}}!">
+                                        <small class="muted">Customize the text shown to customers for this upsell offer</small>
+                                    </div>
+                                </div>
+
+                                <!-- Page Configuration -->
+                                <h2 class="mt24">Landing Page Configuration</h2>
+                                <div class="muted mb12">Metadata for dynamic offer page generation</div>
+                                
+                                <div class="form-group">
+                                    <label for="heroTitle">Hero Title</label>
+                                    <input type="text" id="heroTitle" placeholder="Transform Your Life Today!">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="heroSubtitle">Hero Subtitle</label>
+                                    <input type="text" id="heroSubtitle" placeholder="The ultimate solution you've been waiting for">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="benefits">Benefits (pipe-separated)</label>
+                                    <textarea id="benefits" rows="3" placeholder="Benefit 1|Benefit 2|Benefit 3"></textarea>
+                                    <small class="muted">Separate each benefit with a pipe character (|)</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="guarantee">Guarantee Text</label>
+                                    <input type="text" id="guarantee" placeholder="30-day money-back guarantee">
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="row mt24">
+                                    <button type="button" id="btnSaveProduct">Save Product</button>
+                                    <button type="button" id="btnCancelProduct" class="secondary">Cancel</button>
+                                </div>
+                                <div id="productFormMsgBottom" class="mt12"></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>

@@ -1,0 +1,11 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Sid": "AllowCloudFrontOACOnly",
+    "Effect": "Allow",
+    "Principal": { "Service": "cloudfront.amazonaws.com" },
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::landing-pages-dev-150544707159/*",
+    "Condition": { "StringEquals": { "AWS:SourceArn": "arn:aws:cloudfront::150544707159:distribution/EKHWQQ9JA2EL8" } }
+  }]
+}

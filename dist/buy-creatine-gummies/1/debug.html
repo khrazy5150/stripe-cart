@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders Debug Tool</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #0b1220;
+            color: #f8fafc;
+        }
+        .section {
+            background: #0f172a;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        h1, h2 { margin-top: 0; color: #22c55e; }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: #1e293b;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: #f8fafc;
+            font-size: 14px;
+        }
+        button {
+            padding: 12px 24px;
+            margin: 8px 8px 8px 0;
+            background: #22c55e;
+            color: #052e16;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover { background: #16a34a; }
+        button.secondary { background: #475569; color: #f8fafc; }
+        .results {
+            background: #1e293b;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .success { color: #22c55e; }
+        .error { color: #ef4444; }
+        .warning { color: #f59e0b; }
+        .info { color: #60a5fa; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        th {
+            background: #1e293b;
+            font-weight: 600;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-success { background: rgba(34,197,94,0.2); color: #22c55e; }
+        .badge-danger { background: rgba(239,68,68,0.2); color: #ef4444; }
+        .badge-warn { background: rgba(245,158,11,0.2); color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Orders Debug Tool</h1>
+    
+    <div class="section">
+        <h2>1. Configuration</h2>
+        <label>Environment:</label>
+        <select id="env">
+            <option value="dev">Development</option>
+            <option value="prod">Production</option>
+        </select>
+        
+        <label>Base URL:</label>
+        <input id="baseUrl" type="text" value="https://api-dev.juniorbay.com" placeholder="https://api-dev.juniorbay.com">
+        
+        <label>Client ID:</label>
+        <input id="clientId" type="text" placeholder="d831c360-00e1-706a-6d3a-2a5361c20df6">
+        
+        <button onclick="saveConfig()">Save Config</button>
+    </div>
+
+    <div class="section">
+        <h2>2. Test Direct DynamoDB Query</h2>
+        <p class="info">This will show you the raw table structure and what's actually in DynamoDB</p>
+        <button onclick="testTableScan()">Scan Orders Table (First 10)</button>
+        <div id="scanResults" class="results" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+        <h2>3. Test API Endpoint</h2>
+        <button onclick="testGetOrders()">GET /admin/orders</button>
+        <button onclick="testGetOrdersWithDebug()" class="secondary">GET with Query Params</button>
+        <div id="apiResults" class="results" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+        <h2>4. Check Network Request</h2>
+        <p class="info">This simulates exactly what your frontend does</p>
+        <button onclick="simulateFrontendRequest()">Simulate Frontend Request</button>
+        <div id="frontendResults" class="results" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+        <h2>5. Create Test Order</h2>
+        <p class="warning">This will create a test order in your database</p>
+        <button onclick="createTestOrder()">Create Test Order</button>
+        <div id="createResults" class="results" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+        <h2>6. Check Table Structure</h2>
+        <button onclick="checkTableStructure()">Verify Table Keys & GSI</button>
+        <div id="structureResults" class="results" style="display:none;"></div>
+    </div>
+
+    <script>
+        function saveConfig() {
+            const env = document.getElementById('env').value;
+            const baseUrl = document.getElementById('baseUrl').value;
+            const clientId = document.getElementById('clientId').value;
+            
+            localStorage.setItem('debug_env', env);
+            localStorage.setItem('debug_baseUrl', baseUrl);
+            localStorage.setItem('debug_clientId', clientId);
+            
+            alert('✅ Configuration saved!');
+        }
+
+        function loadConfig() {
+            const env = localStorage.getItem('debug_env') || 'dev';
+            const baseUrl = localStorage.getItem('debug_baseUrl') || 'https://api-dev.juniorbay.com';
+            const clientId = localStorage.getItem('debug_clientId') || '';
+            
+            document.getElementById('env').value = env;
+            document.getElementById('baseUrl').value = baseUrl;
+            document.getElementById('clientId').value = clientId;
+            
+            return { env, baseUrl, clientId };
+        }
+
+        async function testGetOrders() {
+            const { baseUrl, clientId } = loadConfig();
+            const resultsDiv = document.getElementById('apiResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<pre class="info">⏳ Loading...</pre>';
+            
+            try {
+                const url = `${baseUrl}/admin/orders?clientID=${encodeURIComponent(clientId)}&limit=10`;
+                console.log('🔗 Fetching:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Client-Id': clientId
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let html = `<pre class="${response.ok ? 'success' : 'error'}">`;
+                html += `📊 Status: ${response.status}\n`;
+                html += `🔗 URL: ${url}\n\n`;
+                html += `📦 Response:\n${JSON.stringify(data, null, 2)}`;
+                html += `</pre>`;
+                
+                if (data.orders && Array.isArray(data.orders)) {
+                    html += `\n\n<h3>Found ${data.orders.length} orders:</h3>`;
+                    html += renderOrdersTable(data.orders);
+                }
+                
+                resultsDiv.innerHTML = html;
+            } catch (err) {
+                resultsDiv.innerHTML = `<pre class="error">❌ Error: ${err.message}\n\n${err.stack}</pre>`;
+            }
+        }
+
+        async function testGetOrdersWithDebug() {
+            const { baseUrl, clientId } = loadConfig();
+            const resultsDiv = document.getElementById('apiResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<pre class="info">⏳ Testing with various parameters...</pre>';
+            
+            const tests = [
+                { desc: 'With clientID query param', url: `${baseUrl}/admin/orders?clientID=${encodeURIComponent(clientId)}` },
+                { desc: 'With limit=50', url: `${baseUrl}/admin/orders?clientID=${encodeURIComponent(clientId)}&limit=50` },
+                { desc: 'With X-Client-Id header only', url: `${baseUrl}/admin/orders`, headers: { 'X-Client-Id': clientId } }
+            ];
+            
+            let html = '';
+            
+            for (const test of tests) {
+                try {
+                    console.log(`Testing: ${test.desc}`);
+                    const response = await fetch(test.url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(test.headers || {})
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    html += `<pre class="${response.ok ? 'success' : 'error'}">`;
+                    html += `\n📝 Test: ${test.desc}\n`;
+                    html += `📊 Status: ${response.status}\n`;
+                    html += `🔗 URL: ${test.url}\n`;
+                    html += `📦 Orders Count: ${data.orders ? data.orders.length : 0}\n`;
+                    html += `📈 Total Unfulfilled: ${data.totalCount || 0}\n`;
+                    html += `🔄 Has More: ${data.hasMore}\n`;
+                    html += `</pre>\n`;
+                } catch (err) {
+                    html += `<pre class="error">❌ ${test.desc} failed: ${err.message}</pre>\n`;
+                }
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        async function simulateFrontendRequest() {
+            const { baseUrl, clientId } = loadConfig();
+            const resultsDiv = document.getElementById('frontendResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<pre class="info">⏳ Simulating frontend request...</pre>';
+            
+            try {
+                // Exact simulation of what orders.js does
+                const params = new URLSearchParams({ 
+                    limit: '10',
+                    clientID: clientId
+                });
+                
+                const url = `${baseUrl}/admin/orders?${params.toString()}`;
+                console.log('Frontend would call:', url);
+                
+                const response = await fetch(url, { 
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let html = `<pre class="${response.ok ? 'success' : 'error'}">`;
+                html += `🎯 Frontend Simulation\n`;
+                html += `📊 Status: ${response.status}\n`;
+                html += `🔗 URL: ${url}\n\n`;
+                html += `📦 Response Structure:\n`;
+                html += `  - orders: ${data.orders ? `Array[${data.orders.length}]` : 'undefined'}\n`;
+                html += `  - totalCount: ${data.totalCount}\n`;
+                html += `  - hasMore: ${data.hasMore}\n`;
+                html += `  - nextKey: ${data.nextKey ? 'present' : 'null'}\n\n`;
+                
+                if (data.error) {
+                    html += `❌ Error: ${data.error}\n`;
+                }
+                
+                html += `\n📄 Full Response:\n${JSON.stringify(data, null, 2)}`;
+                html += `</pre>`;
+                
+                if (data.orders && data.orders.length > 0) {
+                    html += `\n\n<h3>✅ Orders Found (${data.orders.length}):</h3>`;
+                    html += renderOrdersTable(data.orders);
+                } else {
+                    html += `\n\n<pre class="warning">⚠️ No orders returned. Check:\n`;
+                    html += `  1. Does this clientID have any orders in DynamoDB?\n`;
+                    html += `  2. Are the orders in the correct format?\n`;
+                    html += `  3. Is the GSI properly configured?\n`;
+                    html += `</pre>`;
+                }
+                
+                resultsDiv.innerHTML = html;
+            } catch (err) {
+                resultsDiv.innerHTML = `<pre class="error">❌ Error: ${err.message}\n\n${err.stack}</pre>`;
+            }
+        }
+
+        async function createTestOrder() {
+            const { baseUrl, clientId } = loadConfig();
+            const resultsDiv = document.getElementById('createResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<pre class="info">⏳ Creating test order...</pre>';
+            
+            const testOrder = {
+                clientID: clientId,
+                order_id: `test_${Date.now()}`,
+                amount_total: 4999,
+                currency: 'usd',
+                payment_status: 'succeeded',
+                customer_name: 'Test Customer',
+                customer_email: 'test@example.com',
+                product_name: 'Test Product',
+                shipping_address: '123 Test St, Test City, TS 12345',
+                fulfilled: false,
+                status: 'created'
+            };
+            
+            try {
+                const response = await fetch(`${baseUrl}/admin/orders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Client-Id': clientId
+                    },
+                    body: JSON.stringify(testOrder)
+                });
+                
+                const data = await response.json();
+                
+                resultsDiv.innerHTML = `<pre class="${response.ok ? 'success' : 'error'}">`;
+                resultsDiv.innerHTML += `${response.ok ? '✅' : '❌'} Status: ${response.status}\n\n`;
+                resultsDiv.innerHTML += `📦 Response:\n${JSON.stringify(data, null, 2)}`;
+                resultsDiv.innerHTML += `</pre>`;
+                
+                if (response.ok) {
+                    resultsDiv.innerHTML += `\n<p class="success">✅ Test order created! Try loading orders again.</p>`;
+                }
+            } catch (err) {
+                resultsDiv.innerHTML = `<pre class="error">❌ Error: ${err.message}</pre>`;
+            }
+        }
+
+        async function checkTableStructure() {
+            const resultsDiv = document.getElementById('structureResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = `<pre class="info">
+📋 Expected Table Structure:
+
+Table Name: orders-dev or orders-prod
+Primary Key:
+  - clientID (HASH)
+  - order_id (RANGE)
+
+Global Secondary Index: client-created-index
+  - clientID (HASH)
+  - created_at (RANGE)
+
+Required Attributes for Orders:
+  ✓ clientID (String)
+  ✓ order_id (String)
+  ✓ created_at (String - ISO 8601 format)
+  ✓ payment_status (String - "succeeded", "pending", etc.)
+  ✓ fulfilled (Boolean or String)
+  ✓ customer_name (String)
+  ✓ customer_email (String)
+  ✓ product_name (String)
+  ✓ amount_total (Number - in cents)
+  ✓ currency (String)
+
+⚠️ Common Issues:
+  1. Missing created_at field → GSI query fails
+  2. Wrong clientID → No orders found
+  3. Missing GSI → Query fails
+  4. Orders in wrong format → Frontend can't parse
+            </pre>`;
+        }
+
+        function renderOrdersTable(orders) {
+            if (!orders || orders.length === 0) return '<p class="warning">No orders to display</p>';
+            
+            let html = '<table><thead><tr>';
+            html += '<th>Order ID</th>';
+            html += '<th>Customer</th>';
+            html += '<th>Amount</th>';
+            html += '<th>Status</th>';
+            html += '<th>Fulfilled</th>';
+            html += '<th>Created</th>';
+            html += '</tr></thead><tbody>';
+            
+            orders.forEach(order => {
+                const isFulfilled = order.fulfilled === true || order.fulfilled === 'true';
+                const isPaid = (order.payment_status || '').toLowerCase() === 'succeeded';
+                
+                html += '<tr>';
+                html += `<td><code>${order.order_id || 'N/A'}</code></td>`;
+                html += `<td>${order.customer_name || order.customer_email || 'N/A'}</td>`;
+                html += `<td>$${((order.amount_total || 0) / 100).toFixed(2)}</td>`;
+                html += `<td><span class="badge ${isPaid ? 'badge-success' : 'badge-warn'}">${order.payment_status || 'unknown'}</span></td>`;
+                html += `<td><span class="badge ${isFulfilled ? 'badge-success' : 'badge-danger'}">${isFulfilled ? 'Yes' : 'No'}</span></td>`;
+                html += `<td>${order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A'}</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            return html;
+        }
+
+        // Auto-load config on page load
+        window.addEventListener('DOMContentLoaded', loadConfig);
+    </script>
+</body>
+</html>

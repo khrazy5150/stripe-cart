@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>NAD Supplement — Mobile Checkout</title>
+<meta name="theme-color" content="#0f172a">
+<style>
+  :root{
+    --bg:#0b1220;           /* deep slate for contrast */
+    --card:#0f172a;         /* slightly lighter than bg */
+    --ink:#f8fafc;          /* near-white text */
+    --muted:#cbd5e1;        /* body text */
+    --brand:#22c55e;        /* green accent */
+    --accent:#60a5fa;       /* blue accent */
+    --warning:#f59e0b;      /* gold badge */
+    --danger:#ef4444;       /* red badge */
+    --ok:#10b981;           /* teal badge */
+    --ring:rgba(96,165,250,.35);
+    --shadow:0 12px 30px rgba(0,0,0,.35);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:linear-gradient(180deg,#0b1220,#0b1220 50%,#0b1220);
+    color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.35;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding-bottom:96px}
+  header{padding:16px 16px 0}
+  .brand{display:flex;align-items:center;gap:10px}
+  .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--brand),#4ade80)}
+  .brand h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:#a3e635;margin:0;opacity:.9}
+  .hero{margin:12px 16px;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow)}
+  .hero img{display:block;width:100%;height:auto}
+  .headline{padding:6px 16px 0}
+  .headline h2{font-size:28px;margin:10px 0 6px;line-height:1.1}
+  .headline p{margin:0;color:var(--muted);font-size:15px}
+  .trust{display:flex;gap:8px;flex-wrap:wrap;margin:12px 16px 0}
+  .chip{font-size:12px;color:#d1fae5;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);padding:8px 10px;border-radius:999px}
+  .cards{display:grid;gap:14px;margin:16px}
+  .card{
+    background:linear-gradient(180deg,#0f172a,#101827);
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:var(--radius); padding:14px; position:relative; box-shadow:var(--shadow)
+  }
+  .badge{
+    position:absolute;top:12px;right:12px;font-size:11px;font-weight:700;
+    padding:6px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.15);
+    background:rgba(96,165,250,.18);color:#e0f2fe
+  }
+  .badge.gold{background:rgba(245,158,11,.18); color:#fffbeb}
+  .badge.red{background:rgba(239,68,68,.18); color:#fee2e2}
+  .title{font-weight:800;font-size:16px;margin:4px 0 3px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 6px}
+  .priceRow{display:flex;align-items:baseline;gap:8px;margin:6px 0 10px}
+  .price{font-size:22px;font-weight:900}
+  .compare{font-size:13px;color:#94a3b8;text-decoration:line-through}
+  .per{font-size:12px;color:#a5b4fc;background:rgba(99,102,241,.14);border:1px solid rgba(99,102,241,.25);padding:4px 7px;border-radius:8px}
+  .savings{font-size:12px;color:#86efac;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.25);padding:4px 7px;border-radius:8px;margin-left:auto}
+  .radioRow{display:flex;gap:10px;align-items:center;margin-top:6px}
+  .radioRow input{accent-color:#22c55e;width:18px;height:18px}
+  .cta-sticky{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;background:linear-gradient(180deg,rgba(15,23,42,.3),#0b1220 20%);
+    border-top:1px solid rgba(255,255,255,.08);padding:12px 16px env(safe-area-inset-bottom)
+  }
+  .cta-inner{max-width:720px;margin:0 auto;display:flex;gap:10px;align-items:center}
+  .cta-btn{
+    flex:1;background:linear-gradient(135deg,#22c55e,#16a34a);
+    color:#052e16;border:none;border-radius:14px;padding:16px 18px;font-weight:900;font-size:16px;
+    box-shadow:0 8px 18px rgba(34,197,94,.35), inset 0 0 0 1px rgba(255,255,255,.25);
+  }
+  .cta-meta{font-size:12px;color:#a7f3d0}
+  .skeleton{animation:pulse 1.2s infinite ease-in-out;background:linear-gradient(90deg,#111827 25%,#1f2937 37%,#111827 63%);background-size:400% 100%}
+  .sk-card{height:120px;border-radius:var(--radius)}
+  @keyframes pulse{0%{background-position:100% 0}100%{background-position:0 0}}
+  .note{color:#94a3b8;font-size:12px;margin:0 16px}
+  .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);margin:16px}
+  .faq{margin:0 16px 24px}
+  details{background:#0f172a;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px 12px;margin-top:10px}
+  summary{cursor:pointer;font-weight:700}
+  .hidden{display:none}
+  /* tap targets */
+  button,summary{touch-action:manipulation}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="dot"></span><h1>NAD+ Boost • Official</h1></div>
+  </header>
+
+  <div class="hero">
+    <img src="https://images.juniorbay.net/photos/0GabhF7s3Fo/medium.avif" alt="NAD Supplement bottles" width="1200" height="800" loading="eager">
+  </div>
+
+  <section class="headline">
+    <h2>Charge Your Cells. Feel the Difference in Days.</h2>
+    <p>Clinically-dosed NAD⁺ support for energy, focus, and healthy aging. Pick a bundle & save more.</p>
+  </section>
+
+  <div class="trust">
+    <span class="chip">⚡ Fast Checkout</span>
+    <span class="chip">✔️ 30-Day Guarantee</span>
+    <span class="chip">🇺🇸 Ships from USA</span>
+  </div>
+
+  <p class="note" id="offerLabel">Loading offer…</p>
+
+  <div class="cards" id="cards">
+    <!-- Skeleton placeholders -->
+    <div class="card skeleton sk-card"></div>
+    <div class="card skeleton sk-card"></div>
+    <div class="card skeleton sk-card"></div>
+    <div class="card skeleton sk-card"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <section class="faq">
+    <details>
+      <summary>What is NAD⁺?</summary>
+      <p>NAD⁺ is a vital coenzyme that powers cellular energy and supports healthy aging, focus, and recovery.</p>
+    </details>
+    <details>
+      <summary>How do I take it?</summary>
+      <p>Take the recommended daily serving on the label. Most customers feel noticeable benefits within 1–2 weeks.</p>
+    </details>
+    <details>
+      <summary>Is there a guarantee?</summary>
+      <p>Yes—try it for 30 days. If you don’t love it, contact support for a hassle-free refund.</p>
+    </details>
+  </section>
+</div>
+
+<!-- Sticky CTA -->
+<div class="cta-sticky">
+  <div class="cta-inner">
+    <div class="cta-meta" id="ctaMeta">Select a package to continue</div>
+    <button class="cta-btn" id="orderBtn" disabled>Order Now</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const cardsEl = $('#cards');
+  const orderBtn = $('#orderBtn');
+  const ctaMeta = $('#ctaMeta');
+  const offerLabel = $('#offerLabel');
+
+  // Read clientID & offer from URL; fall back to provided defaults
+  const url = new URL(location.href);
+  const clientID = url.searchParams.get('clientID') || 'd831c360-00e1-706a-6d3a-2a5361c20df6';
+  const offerKey = url.searchParams.get('offer') || 'nad-supplement';
+  const api = `https://api-dev.juniorbay.com/public/offer?clientID=${encodeURIComponent(clientID)}&offer=${encodeURIComponent(offerKey)}`;
+
+  offerLabel.textContent = 'Offer: ' + offerKey.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+
+  let selected = null;
+
+  function money(n){
+    const v = Number(n || 0);
+    return v.toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:2});
+  }
+  function perBottle(totalPrice,bottles){
+    if(!bottles){return null;}
+    const each = Number(totalPrice)/Number(bottles);
+    if(!isFinite(each)) return null;
+    return money(each) + '/bottle';
+  }
+  function computeSavings(price, compareAt){
+    if(!compareAt || compareAt<=price) return null;
+    const diff = compareAt - price;
+    const pct = Math.round(diff/compareAt*100);
+    return {diff, pct};
+  }
+
+  function badgeClass(label=''){
+    const l = label.toLowerCase();
+    if(l.includes('best') || l.includes('value')) return 'gold';
+    if(l.includes('most') || l.includes('popular')) return '';
+    if(l.includes('limited') || l.includes('flash') || l.includes('save')) return 'red';
+    return '';
+  }
+
+  function buildCard(pkg, idx){
+    const id = 'pkg_' + (pkg.id || idx);
+    const label = pkg.badge || (idx===0 ? 'Best Value' : idx===1 ? 'Most Popular' : '');
+    const bClass = badgeClass(label);
+
+    const per = perBottle(pkg.price, pkg.bottles);
+    const savings = computeSavings(pkg.price, pkg.compare_at);
+
+    const el = document.createElement('label');
+    el.className = 'card';
+    el.setAttribute('for', id);
+    el.innerHTML = `
+      ${label ? `<div class="badge ${bClass}">${label}</div>` : ``}
+      <div class="title">${pkg.name || 'Package'}</div>
+      <p class="sub">${pkg.subtitle || (pkg.bottles ? `${pkg.bottles} bottle${pkg.bottles>1?'s':''}` : '')}</p>
+      <div class="priceRow">
+        <div class="price">${money(pkg.price)}</div>
+        ${pkg.compare_at ? `<div class="compare">${money(pkg.compare_at)}</div>`:''}
+        ${per ? `<div class="per">${per}</div>`:''}
+        ${savings ? `<div class="savings">Save ${savings.pct}%</div>`:''}
+      </div>
+      <div class="radioRow">
+        <input type="radio" name="package" id="${id}" value="${id}">
+        <span style="font-size:12px;color:#9ca3af">${pkg.short || 'Ships in 24–48h'}</span>
+      </div>
+    `;
+
+    el.addEventListener('change', () => {
+      selected = pkg;
+      orderBtn.disabled = false;
+      ctaMeta.textContent = `${pkg.name}: ${money(pkg.price)}`;
+    });
+
+    return el;
+  }
+
+  function clearSkeleton(){
+    cardsEl.innerHTML = '';
+  }
+
+  function hydrate(packages){
+    clearSkeleton();
+    if(!packages || !packages.length){
+      cardsEl.innerHTML = `<p class="note">No packages found for this offer.</p>`;
+      return;
+    }
+    // Sort: Best Value > Most Popular > others > by price desc
+    const orderScore = (p) => {
+      const tag = (p.badge||'').toLowerCase();
+      if(tag.includes('best')) return -2;
+      if(tag.includes('popular')) return -1;
+      return 0;
+    };
+    packages.sort((a,b)=> (orderScore(a)-orderScore(b)) || (b.price - a.price));
+
+    packages.forEach((pkg,i)=>{
+      cardsEl.appendChild(buildCard(pkg,i));
+    });
+
+    // Preselect the first
+    const firstRadio = cardsEl.querySelector('input[type=radio]');
+    if(firstRadio){
+      firstRadio.checked = true;
+      const first = packages[0];
+      selected = first;
+      orderBtn.disabled = false;
+      ctaMeta.textContent = `${first.name}: ${money(first.price)}`;
+    }
+  }
+
+  function normalizeFromApi(json){
+    // Expected flexible shapes:
+    // A) { offers: { [offerKey]: { packages: [...] } } }
+    // B) { offers: { [offerKey]: { options|plans|tiers: [...] } } }
+    // C) Direct array
+    // Each package should end as: { id, name, subtitle?, price, compare_at?, bottles?, badge?, short? }
+    try{
+      let node = json;
+      if(node && node.offers && node.offers[offerKey]){
+        node = node.offers[offerKey];
+      }
+      let arr = node?.packages || node?.options || node?.plans || node?.tiers || (Array.isArray(node)? node : null);
+      if(!Array.isArray(arr)){ arr = []; }
+
+      // Map best effort field names
+      const mapped = arr.map((p,i)=>{
+        const price = Number(p.price ?? p.amount ?? p.total ?? p.unit_price ?? 0);
+        const compareAt = Number(p.compare_at ?? p.msrp ?? p.anchor_price ?? 0);
+        const bottles = Number(p.bottles ?? p.qty ?? p.quantity ?? p.units ?? (p.name && /\b(\d+)\s*bottle/i.test(p.name) ? RegExp.$1 : 0));
+        const badge = p.badge || p.tag || p.label || '';
+        const subtitle = p.subtitle || p.subheading || p.description || (bottles ? `${bottles} bottle${bottles>1?'s':''}` : '');
+        const name = p.name || p.title || `Package ${i+1}`;
+        const short = p.short || p.ship_note || p.note || '';
+        return {
+          raw: p,
+          id: p.id || p.slug || `pkg-${i+1}`,
+          name, subtitle, price, compare_at: compareAt || 0, bottles: bottles || null, badge, short
+        };
+      });
+
+      // If API only gave product IDs, synthesize four standard bundles as a fallback
+      if(mapped.length === 0 && node && node.product_ids){
+        const synth = [
+          {name:'6 Bottles • Best Value', bottles:6, price:219.00, compare_at:354.00, badge:'Best Value', subtitle:'6-month supply', short:'Free shipping'},
+          {name:'3 Bottles • Most Popular', bottles:3, price:129.00, compare_at:177.00, badge:'Most Popular', subtitle:'3-month supply', short:'Free shipping'},
+          {name:'2 Bottles', bottles:2, price:92.00, compare_at:118.00, badge:'Bundle & Save', subtitle:'2-month supply'},
+          {name:'1 Bottle', bottles:1, price:49.00, compare_at:59.00, badge:'Starter', subtitle:'30-day supply'}
+        ];
+        return synth.map((p,i)=>({...p,id:`syn-${i+1}`}));
+      }
+
+      return mapped;
+    }catch(e){
+      console.warn('Normalization error', e);
+      return [];
+    }
+  }
+
+  async function load(){
+    try{
+      const res = await fetch(api, {credentials:'omit', mode:'cors', cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      const pkgs = normalizeFromApi(data);
+      hydrate(pkgs);
+    }catch(err){
+      console.error(err);
+      clearSkeleton();
+      cardsEl.innerHTML = `
+        <div class="card">
+          <div class="title">We’re having trouble loading packages.</div>
+          <p class="sub">Please try again in a moment.</p>
+          <div class="priceRow"><div class="price">$49.00</div></div>
+          <div class="radioRow"><input type="radio" disabled><span style="font-size:12px;color:#9ca3af">Sample option</span></div>
+        </div>`;
+    }
+  }
+
+  orderBtn.addEventListener('click', ()=>{
+    if(!selected){ return; }
+    alert(`You picked ${selected.name} for ${selected.price ? selected.price.toLocaleString(undefined,{style:'currency',currency:'USD'}) : '$0.00'}!`);
+    // Integration note:
+    // Replace the alert with a redirect to Stripe Checkout:
+    // location.href = `/api/create-checkout?package_id=${encodeURIComponent(selected.id)}&clientID=${encodeURIComponent(clientID)}&offer=${encodeURIComponent(offerKey)}`;
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

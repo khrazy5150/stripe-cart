@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b5294" />
+  <meta name="format-detection" content="telephone=no,email=no,address=no" />
+  <title>One Time Offer for You! - Junior Bay</title>
+  <link rel="icon" type="image/x-icon" href="https://images.juniorbay.com/icon/favicon.png">
+
+  <!-- Performance: early connections -->
+  <link rel="dns-prefetch" href="//fonts.juniorbay.com" />
+  <link rel="dns-prefetch" href="//juniorbay.net" />
+  <link rel="preconnect" href="https://juniorbay.net" crossorigin />
+
+  <!-- System & custom fonts -->
+  <link href="https://fonts.juniorbay.com/?family=Aileron:400,600&family=Quicksand:700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      /* Optimized fluid type scale for 340px+ */
+      --step--1: clamp(0.813rem, 0.75rem + 0.31vw, 0.938rem);
+      --step-0: clamp(0.938rem, 0.875rem + 0.31vw, 1.063rem);
+      --step-1: clamp(1.063rem, 0.969rem + 0.47vw, 1.25rem);
+      --step-2: clamp(1.25rem, 1.094rem + 0.78vw, 1.625rem);
+      --step-3: clamp(1.5rem, 1.25rem + 1.25vw, 2.125rem);
+      --step-4: clamp(1.875rem, 1.5rem + 1.88vw, 2.75rem);
+      --brand: #0b5294;
+      --accent: #ff8309;
+      --success: #10b981;
+      --danger: #dc2626;
+      --ink: #1f2937;
+      --ink-2: #374151;
+      --bg: #ffffff;
+      --radius: 12px;
+      --shadow: 0 4px 16px rgba(0,0,0,.08);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,.12);
+      --safe-top: env(safe-area-inset-top);
+      --safe-right: env(safe-area-inset-right);
+      --safe-bottom: env(safe-area-inset-bottom);
+      --safe-left: env(safe-area-inset-left);
+    }
+
+    * { box-sizing: border-box; }
+    
+    html, body { height: 100%; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: Aileron, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f8fafc 0%, #e0e7ff 100%);
+      line-height: 1.4;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: none;
+    }
+
+    /* Animations */
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -1000px 0; }
+      100% { background-position: 1000px 0; }
+    }
+
+    /* Mobile-first container optimized for 340px+ */
+    .upsell-container {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: calc(12px + var(--safe-top)) 12px calc(140px + var(--safe-bottom));
+      text-align: center;
+      animation: scaleIn 0.4s ease-out;
+    }
+
+    @media (min-width: 480px) {
+      .upsell-container {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+    }
+
+    .success-badge {
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      font-weight: 700;
+      padding: .5rem .9rem;
+      border-radius: 999px;
+      margin: 0 0 .75rem 0;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+      font-size: var(--step--1);
+      animation: slideDown 0.5s ease-out;
+    }
+
+    h1 { 
+      font-size: var(--step-3); 
+      margin: .25rem 0 .25rem; 
+      line-height: 1.2;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--ink) 0%, var(--brand) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    h2 { 
+      font-size: var(--step-2); 
+      margin: 0 0 .75rem; 
+      line-height: 1.2;
+      font-weight: 700;
+    }
+    h3 { 
+      font-size: var(--step-1); 
+      margin: 0 0 .5rem; 
+      line-height: 1.3;
+      font-weight: 700;
+    }
+    h4 { 
+      font-size: var(--step-0); 
+      margin: 0 0 .5rem; 
+      font-weight: 700;
+    }
+
+    .upsell-offer {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      border-radius: 16px;
+      padding: 1rem;
+      margin: .875rem 0 0;
+      box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+      animation: scaleIn 0.5s ease-out 0.2s both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upsell-offer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 200%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      animation: shimmer 3s infinite;
+    }
+
+    @media (min-width: 480px) {
+      .upsell-offer {
+        padding: 1.5rem;
+      }
+    }
+
+    .price-comparison {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+
+    @media (min-width: 600px) {
+      .price-comparison {
+        flex-direction: row;
+        justify-content: center;
+        gap: 1.5rem;
+      }
+    }
+
+    .product-img-wrap {
+      width: 100%;
+      max-width: min(280px, calc(100vw - 48px));
+      aspect-ratio: 1 / 1;
+      border-radius: 16px;
+      overflow: hidden;
+      background: rgba(255,255,255,.15);
+      box-shadow: 0 8px 32px rgba(0,0,0,.15);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .product-img-wrap:hover {
+      transform: scale(1.02);
+      box-shadow: 0 12px 48px rgba(0,0,0,.2);
+    }
+    
+    @media (min-width: 480px) {
+      .product-img-wrap {
+        max-width: 320px;
+      }
+    }
+    
+    .product-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .price-box {
+      color: #111;
+      background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+      border-radius: 16px;
+      padding: 1rem;
+      width: 100%;
+      max-width: 100%;
+      box-shadow: 0 8px 32px rgba(0,0,0,.12);
+      border: 2px solid rgba(255,255,255,0.8);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .price-box:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 48px rgba(0,0,0,.18);
+    }
+
+    @media (min-width: 480px) {
+      .price-box {
+        padding: 1.5rem;
+        max-width: 360px;
+      }
+    }
+
+    .fire-sale {
+      color: var(--accent);
+      font-weight: 800;
+      font-size: var(--step-0);
+      padding-bottom: .35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .upsell-price {
+      display: inline-block;
+      background: linear-gradient(135deg, #fffd5c 0%, #ffd700 100%);
+      color: #111;
+      padding: .4rem .7rem;
+      border-radius: 12px;
+      font-weight: 900;
+      line-height: 1.1;
+      font-size: clamp(2rem, 8vw, 3.25rem);
+      letter-spacing: 1px;
+      box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    .upsell-savings { 
+      font-size: var(--step-0); 
+      margin-top: .5rem;
+      font-weight: 700;
+      color: var(--success);
+    }
+
+    .countdown-upsell {
+      background: linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%);
+      color: #fff;
+      padding: .875rem 1rem;
+      border-radius: 12px;
+      margin: 1.25rem auto 0;
+      font-weight: 800;
+      width: 100%;
+      max-width: 100%;
+      box-shadow: 0 6px 24px rgba(220, 38, 38, 0.3);
+      font-size: var(--step--1);
+      line-height: 1.4;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @media (min-width: 480px) {
+      .countdown-upsell {
+        font-size: var(--step-0);
+        max-width: 480px;
+        padding: 1rem 1.25rem;
+      }
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 1rem 0 0;
+      text-align: left;
+      display: grid;
+      gap: .625rem;
+      font-size: var(--step--1);
+    }
+    
+    @media (min-width: 480px) {
+      ul {
+        font-size: var(--step-0);
+        gap: .75rem;
+      }
+    }
+    
+    ul li { 
+      display: flex; 
+      gap: .625rem; 
+      align-items: flex-start;
+      line-height: 1.5;
+      padding: .25rem 0;
+    }
+    ul li::before { 
+      content: "✓"; 
+      color: #fffd5c; 
+      font-weight: 900;
+      flex-shrink: 0;
+      font-size: 1.2em;
+    }
+
+    .btn-upsell {
+      -webkit-appearance: none;
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 800;
+      border-radius: 12px;
+      padding: .875rem 1rem;
+      box-shadow: var(--shadow);
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+      font-size: clamp(0.938rem, 4vw, 1.125rem);
+      min-height: 48px;
+      line-height: 1.3;
+    }
+    
+    @media (min-width: 480px) {
+      .btn-upsell {
+        padding: 1.125rem 1.5rem;
+      }
+    }
+    
+    .btn-upsell:active { 
+      transform: translateY(1px) scale(.99); 
+    }
+
+    .btn-accept {
+      background: linear-gradient(135deg, var(--brand) 0%, #094174 100%);
+      color: #fff;
+      box-shadow: 0 6px 24px rgba(11, 82, 148, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-accept::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 200%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .btn-accept:hover::before {
+      left: 100%;
+    }
+
+    .btn-accept:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(11, 82, 148, 0.4);
+    }
+    
+    .btn-decline {
+      background: transparent;
+      color: var(--brand);
+      text-decoration: underline;
+      font-weight: 700;
+      box-shadow: none;
+      padding: .625rem .5rem;
+      min-height: 44px;
+      text-align: center;
+      transition: opacity 0.2s ease;
+    }
+
+    .btn-decline:hover {
+      opacity: 0.7;
+    }
+
+    /* Sticky bottom CTA */
+    .sticky-cta {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 0;
+      width: 100%;
+      max-width: 720px;
+      padding: .625rem 12px calc(.625rem + var(--safe-bottom)) 12px;
+      background: rgba(255,255,255,.98);
+      backdrop-filter: saturate(180%) blur(20px);
+      box-shadow: 0 -6px 24px rgba(0,0,0,.12);
+      z-index: 50;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: .5rem;
+      border-top: 1px solid rgba(0,0,0,.06);
+    }
+    
+    @media (min-width: 480px) {
+      .sticky-cta {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+    }
+    .sticky-cta .btn-upsell { width: 100%; }
+    .sticky-cta .fine-print {
+      margin-top: .3rem;
+      font-size: var(--step--1);
+      color: var(--ink-2);
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    /* Status messages */
+    .status-message {
+      margin: 0.75rem auto;
+      padding: .875rem;
+      border-radius: 12px;
+      display: none;
+      max-width: 100%;
+      font-size: var(--step--1);
+      line-height: 1.4;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+    }
+    
+    #upsell-error {
+      color: #fff;
+      background: linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%);
+    }
+    
+    #upsell-success {
+      color: #fff;
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { 
+        animation: none !important; 
+        transition: none !important; 
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="upsell-container" id="top">
+    <div class="success-badge" aria-live="polite" role="status">
+      <span aria-hidden="true">✓</span> Order Confirmed!
+    </div>
+
+    <h1>Wait! Before you go…</h1>
+    <h2>🎉 Exclusive One-Time Offer</h2>
+
+    <section class="upsell-offer" aria-labelledby="offer-title">
+      <h3 id="offer-title">Grab Another One At a Discount!</h3>
+      <div class="fine-print">This offer expires when timer hits zero.</div>
+      <!-- <p style="margin: .25rem 0 0.75rem; font-size: var(--step--1); opacity: 0.95;">That's 18% OFF the regular price — only available right now!</p> -->
+
+      <div class="price-comparison">
+        <div class="product-img-wrap">
+          <img src="https://images.juniorbay.net/photos/0GpaFEj7gyu/small.avif" alt="Creatine Gummies" loading="lazy" decoding="async" />
+        </div>
+
+        <div class="price-box">
+          <div class="fire-sale">🔥 Your Special Price</div>
+          <div class="upsell-price" aria-label="Offer price twenty seven dollars">$49.00</div>
+          <div class="upsell-savings" aria-label="You save six dollars">Save money!</div>
+        </div>
+      </div>
+
+      <div class="countdown-upsell" role="timer" aria-live="polite">
+        ⏰ This offer expires in: <span id="upsell-countdown" style="font-family: monospace; font-weight: bold;">01:00</span>
+      </div>
+
+      <div style="margin: .875rem 0 0;">
+        <h4>Why add another supplement?</h4>
+        <ul id="upsell-why-list">
+            <!-- JS will populate these items dynamically -->
+        </ul>
+      </div>
+    </section>
+
+    <!-- Status messages -->
+    <div id="upsell-error" class="status-message"></div>
+    <div id="upsell-success" class="status-message"></div>
+  </main>
+
+  <!-- Sticky bottom CTA -->
+  <div class="sticky-cta" id="sticky-cta">
+    <button id="accept-upsell-sticky" class="btn-upsell btn-accept">Yes! Add Another for $27</button>
+    <a href="#" class="btn-upsell btn-decline" id="decline-upsell" aria-label="No thanks, continue to confirmation">
+      No thanks, continue to confirmation
+    </a>
+  </div>
+
+  <script src="https://js.stripe.com/v3/" defer></script>
+  <script>
+    // Utilities
+    const qs = (s, r = document) => r.querySelector(s);
+
+    function getUrlParameter(name) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    }
+
+    // Config from URL or defaults
+    const sessionId = getUrlParameter('session_id');
+    const url = new URL(location.href);
+    const clientID = 'd831c360-00e1-706a-6d3a-2a5361c20df6';
+    const baseUrl  = 'https://checkout.juniorbay.com';
+    const productID = 'prod_TPaPVW4TC2tunp';
+
+    let sessionData = null;
+    let processing = false;
+
+    // Countdown
+    let countdown = 60;
+    const countdownElement = qs('#upsell-countdown');
+    function startCountdown() {
+      const interval = setInterval(() => {
+        countdown--;
+        const m = Math.floor(countdown / 60).toString().padStart(2,'0');
+        const s = (countdown % 60).toString().padStart(2,'0');
+        countdownElement.textContent = `${m}:${s}`;
+        if (countdown <= 0) {
+          clearInterval(interval);
+          goToThankYou();
+        }
+      }, 1000);
+    }
+
+    function goToThankYou() {
+      const ty = new URL('thank-you.html', location.href);
+      ty.searchParams.set('session_id', sessionId || '');
+      ty.searchParams.set('clientID', clientID || '');
+      ty.searchParams.set('baseUrl', baseUrl || '');
+      location.href = ty.toString();
+    }
+
+    // Load session details
+    async function loadSessionDetails() {
+      if (!sessionId) {
+        console.error('No session_id in URL');
+        location.href = 'index.html';
+        return;
+      }
+      try {
+        const response = await fetch(
+          `${baseUrl}/api/upsell-session?session_id=${encodeURIComponent(sessionId)}&clientID=${encodeURIComponent(clientID)}`
+        );
+        if (!response.ok) throw new Error('Failed to load session details');
+
+        sessionData = await response.json();
+        if (sessionData.has_upsell === false) return goToThankYou();
+        if (!sessionData.upsell_price_id) {
+          const warn = document.getElementById('upsell-error');
+          if (warn) {
+            warn.textContent = 'Upsell configuration error. Redirecting...';
+            warn.style.display = 'block';
+          }
+          setTimeout(goToThankYou, 2000);
+          return;
+        }
+        if (sessionData.upsell_offer_text) {
+          const cleanText = String(sessionData.upsell_offer_text).replace(/^"|"$/g, '');
+          const btn = qs('#accept-upsell-sticky');
+          if (btn) btn.textContent = cleanText;
+        }
+      } catch (e) {
+        console.error('Error loading session:', e);
+        const el = document.getElementById('upsell-error');
+        if (el) {
+          el.textContent = 'Unable to load offer details. Redirecting...';
+          el.style.display = 'block';
+        }
+        setTimeout(goToThankYou, 2000);
+      }
+    }
+
+    // --- helpers for product hydration ---
+    function formatUsdFromCents(cents) {
+        if (typeof cents !== 'number') return '$0.00';
+        return (cents / 100).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+    }
+
+    function pickDefaultPrice(prices = []) {
+        if (!Array.isArray(prices)) return null;
+        const def = prices.find(p => String((p.metadata || {}).is_default).toLowerCase() === 'true' && p.active);
+        if (def) return def;
+        const active = prices.find(p => p.active);
+        return active || prices[0] || null;
+    }
+
+    function parseWhyBuy(str) {
+        if (!str) return [];
+        return String(str)
+        .split('|')
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+
+    function setText(sel, text) {
+        const el = document.querySelector(sel);
+        if (el) el.textContent = text;
+    }
+
+    function replaceListItems(listEl, items) {
+        if (!listEl) return;
+        listEl.innerHTML = '';
+        items.forEach(txt => {
+        const li = document.createElement('li');
+        li.textContent = txt;
+        listEl.appendChild(li);
+        });
+    }
+
+    async function fetchAdminProduct(baseUrl, clientID, productID) {
+        const url = new URL(`${baseUrl}/admin/products/${encodeURIComponent(productID)}`);
+        url.searchParams.set('clientID', clientID);
+        const res = await fetch(url.toString(), { method: 'GET' });
+        if (!res.ok) throw new Error(`Product fetch failed (${res.status})`);
+        return res.json();
+    }
+
+    async function hydrateUpsellFromProduct() {
+        try {
+        // 1) Prefer an injected object (useful for SSR/inlining while testing)
+        let data = (window.__UPSELL_PRODUCT__ || null);
+
+        // 2) Otherwise, fetch from /admin/products/{product_id}?clientID=...
+        if (!data && productID) {
+            data = await fetchAdminProduct(baseUrl, clientID, productID);
+        }
+
+        if (!data || !data.product) {
+            // Nothing to hydrate; keep defaults
+            return;
+        }
+
+        const { product, prices } = data;
+        const priceObj = pickDefaultPrice(prices);
+        const priceText = priceObj ? formatUsdFromCents(Number(priceObj.unit_amount || 0)) : null;
+
+        // -------------- UPDATE UI --------------
+        // Price
+        if (priceText) setText('.upsell-price', priceText);
+
+        // Savings (from metadata.savings)
+        if (product.metadata && product.metadata.savings) {
+            setText('.upsell-savings', product.metadata.savings);
+        }
+
+        // Sticky CTA text (from metadata.upsell_btn_text)
+        if (product.metadata && product.metadata.upsell_btn_text) {
+            setText('#accept-upsell-sticky', product.metadata.upsell_btn_text);
+        }
+
+        // Why-buy bullets (metadata.why_buy: "A | B | C")
+        const whyList = document.getElementById('upsell-why-list');
+        const bullets = parseWhyBuy(product.metadata && product.metadata.why_buy);
+        if (bullets.length) {
+            replaceListItems(whyList, bullets);
+        }
+
+        // (Optional) Update product image if provided
+        if (Array.isArray(product.images) && product.images.length) {
+            const img = document.querySelector('.product-img-wrap img');
+            if (img) img.src = product.images[0];
+        }
+        } catch (err) {
+        console.warn('Hydration skipped:', err);
+        // Keep the existing static content if the call fails
+        }
+    }
+
+    // Process the upsell
+    async function processUpsell() {
+      if (processing) return;
+      if (!sessionData) return alert('Session data not loaded');
+      if (!sessionData.upsell_price_id) {
+        alert('Upsell is not available for this order.');
+        return goToThankYou();
+      }
+
+      processing = true;
+      const buttons = [qs('#accept-upsell-sticky')].filter(Boolean);
+      const originals = buttons.map(b => b.textContent);
+      buttons.forEach(b => { b.disabled = true; b.textContent = 'Processing…'; });
+
+      try {
+        const response = await fetch(`${baseUrl}/api/process-upsell`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientID,
+            session_id: sessionId,
+            customer_id: sessionData.customer_id,
+            payment_method_id: sessionData.payment_method_id,
+            upsell_price_id: sessionData.upsell_price_id,
+            shipping_address: sessionData.shipping_address,
+          })
+        });
+        const result = await response.json();
+        if (result.success) {
+          const ok = document.getElementById('upsell-success');
+          if (ok) { ok.textContent = 'Upsell successful! Redirecting…'; ok.style.display = 'block'; }
+          sessionStorage.setItem('upsellComplete', JSON.stringify({
+            upsellPaymentIntentId: result.payment_intent_id,
+            originalSessionId: sessionId
+          }));
+          setTimeout(goToThankYou, 1500);
+        } else {
+          const err = document.getElementById('upsell-error');
+          if (err) { err.textContent = result.error || 'Payment failed. Please try again.'; err.style.display = 'block'; }
+          buttons.forEach((b,i)=>{ b.disabled = false; b.textContent = originals[i]; });
+          processing = false;
+        }
+      } catch (e) {
+        console.error('Error processing upsell:', e);
+        const err = document.getElementById('upsell-error');
+        if (err) { err.textContent = 'An error occurred. Please try again.'; err.style.display = 'block'; }
+        buttons.forEach((b,i)=>{ b.disabled = false; b.textContent = originals[i]; });
+        processing = false;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      startCountdown();
+      await loadSessionDetails();
+      await hydrateUpsellFromProduct(); // Hook hydration into the existing flow
+
+      const stickyAccept = qs('#accept-upsell-sticky');
+      if (stickyAccept) stickyAccept.addEventListener('click', processUpsell);
+
+      const decline = qs('#decline-upsell');
+      if (decline) decline.addEventListener('click', (e) => { e.preventDefault(); goToThankYou(); });
+    });
+  </script>
+</body>
+</html>

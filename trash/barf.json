@@ -1,0 +1,141 @@
+{
+   "clientID":"d831c360-00e1-706a-6d3a-2a5361c20df6",
+   "products":[
+      {
+         "id":"prod_SxK4r0sm7rKRnx",
+         "name":"NAD Supplement - Six Pouches",
+         "description":"High-Potency Liposomal NAD+ Booster - Nicotinamide Riboside, Resveratrol. High Purity Health Supplement",
+         "active":true,
+         "images":[
+            "https://files.stripe.com/links/MDB8YWNjdF8xR2RKa0ZFY3hsV2ppczlpfGZsX3Rlc3RfUEVFbFdPS1pjUTc3Q2t0anFBMVFiaEZh00rzv0FF6Y"
+         ],
+         "prices":[
+            {
+               "id":"price_1S7XbZEcxlWjis9iXsllQ7NF",
+               "unit_amount":28800,
+               "currency":"usd",
+               "recurring":null
+            },
+            {
+               "id":"price_1S1PQSEcxlWjis9iJx6Bxrde",
+               "unit_amount":14300,
+               "currency":"usd",
+               "recurring":null
+            }
+         ],
+         "price_count":2,
+         "lowest_price":14300,
+         "product_type":"physical",
+         "product_category":"standard",
+         "has_upsell":false,
+         "created":1756462856,
+         "metadata":{
+            
+         }
+      },
+      {
+         "id":"prod_SxJgASmAPdNEgf",
+         "name":"NAD Supplement - Three Pouches",
+         "description":"High-Potency Liposomal NAD+ Booster - Nicotinamide Riboside, Resveratrol. High Purity Health Supplement",
+         "active":true,
+         "images":[
+            "https://files.stripe.com/links/MDB8YWNjdF8xR2RKa0ZFY3hsV2ppczlpfGZsX3Rlc3RfWkNlbkNTQXhmSDIwU01FaVpFS1h6RkxS00Q6StDPH0"
+         ],
+         "prices":[
+            {
+               "id":"price_1S7XZMEcxlWjis9iFz2HUZcF",
+               "unit_amount":14400,
+               "currency":"usd",
+               "recurring":null
+            },
+            {
+               "id":"price_1S1P3ZEcxlWjis9iBmZ21S1P",
+               "unit_amount":8300,
+               "currency":"usd",
+               "recurring":null
+            }
+         ],
+         "price_count":2,
+         "lowest_price":8300,
+         "product_type":"physical",
+         "product_category":"standard",
+         "has_upsell":false,
+         "created":1756461436,
+         "metadata":{
+            
+         }
+      },
+      {
+         "id":"prod_SxJVoQYlPT173d",
+         "name":"NAD Supplement - Two Pouches",
+         "description":"High-Potency Liposomal NAD+ Booster - Nicotinamide Riboside, Resveratrol. High Purity Health Supplement",
+         "active":true,
+         "images":[
+            "https://files.stripe.com/links/MDB8YWNjdF8xR2RKa0ZFY3hsV2ppczlpfGZsX3Rlc3RfSG1Vc1BXc0NqQmR3ZFhLajdUaDNzSllH00Soj6afVa"
+         ],
+         "prices":[
+            {
+               "id":"price_1S7XY3EcxlWjis9ijNw0BDm9",
+               "unit_amount":9600,
+               "currency":"usd",
+               "recurring":null
+            },
+            {
+               "id":"price_1S1OsPEcxlWjis9i4gUfxgrb",
+               "unit_amount":5900,
+               "currency":"usd",
+               "recurring":null
+            }
+         ],
+         "price_count":2,
+         "lowest_price":5900,
+         "product_type":"physical",
+         "product_category":"standard",
+         "has_upsell":false,
+         "created":1756460744,
+         "metadata":{
+            "key":"value"
+         }
+      },
+      {
+         "id":"prod_SxJKn7l9FUAD0B",
+         "name":"NAD Supplement - One Pouch",
+         "description":"High-Potency Liposomal NAD+ Booster - Nicotinamide Riboside, Resveratrol. High Purity Health Supplement",
+         "active":true,
+         "images":[
+            "https://files.stripe.com/links/MDB8YWNjdF8xR2RKa0ZFY3hsV2ppczlpfGZsX3Rlc3RfbWN3a09BZ3A5STd4ZFpCZVdGRmpyaU1u00iBMCU1Wo"
+         ],
+         "prices":[
+            {
+               "id":"price_1S7XTEEcxlWjis9i5p1zPXsF",
+               "unit_amount":4800,
+               "currency":"usd",
+               "recurring":null
+            },
+            {
+               "id":"price_1S1OhTEcxlWjis9iCkif14BY",
+               "unit_amount":3300,
+               "currency":"usd",
+               "recurring":null
+            }
+         ],
+         "price_count":2,
+         "lowest_price":3300,
+         "product_type":"physical",
+         "product_category":"standard",
+         "has_upsell":true,
+         "created":1756460067,
+         "metadata":{
+            "package_height":"4",
+            "package_length":"10",
+            "package_weight":"1",
+            "package_width":"8",
+            "product_category":"standard",
+            "product_type":"physical",
+            "upsell_offer_text":"\"Sure! Let's do this for $27\"",
+            "upsell_price_id":"price_1S1OkzEcxlWjis9iWwhjX5g3",
+            "upsell_product_id":"prod_SxJNY4LxKjI5HN"
+         }
+      }
+   ]
+}

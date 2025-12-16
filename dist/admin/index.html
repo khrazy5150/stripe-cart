@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="https://images.juniorbay.com/icon/favicon.png">
+    <link rel="stylesheet" href="css/admin-styles.css">
+    <link rel="stylesheet" href="css/landing-pages-styles.css">
+    <link rel="stylesheet" href="https://juniorbay.com/vendor/intl-tel-input/25.11.2/build/css/intlTelInput.min.css">
+    <script defer src="https://juniorbay.com/vendor/intl-tel-input/25.11.2/build/js/intlTelInputWithUtils.min.js"></script>
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="login-section">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <h2 class="login-title">Admin Login</h2>
+                    <p class="login-description">Enter your credentials to access the admin panel</p>
+                    <!-- <div class="badge mt12">Env: <span id="envLabel" class="mono"></span></div> -->
+                     <!-- <div class="badge mt12">
+                        Env: <span id="envLabel" class="mono"></span>
+                        <select id="envSelect" class="mono" style="margin-left:8px;">
+                            <option value="dev">dev</option>
+                            <option value="prod">prod</option>
+                        </select>
+                    </div> -->
+                </div>
+                <div class="login-content">
+                    <!-- Auth Tabs -->
+                    <div class="auth-tabs">
+                        <button class="auth-tab active" data-auth-tab="login">Login</button>
+                        <button class="auth-tab" data-auth-tab="register">Register</button>
+                        <button class="auth-tab" data-auth-tab="forgot">Forgot</button>
+                    </div>
+
+                    <!-- Login View -->
+                    <div id="auth-login" class="auth-view active">
+                        <div class="form-group">
+                            <label for="loginEmail" class="form-label">Email</label>
+                            <input type="email" id="loginEmail" class="form-input" placeholder="admin@example.com" autocomplete="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPass" class="form-label">Password</label>
+                            <input type="password" id="loginPass" class="form-input" placeholder="Enter your password" autocomplete="current-password" required>
+                        </div>
+                        <button type="button" id="btnLogin" class="btn">Sign In</button>
+                        <div id="loginMsg"></div>
+                    </div>
+
+                    <!-- Register View -->
+                    <div id="auth-register" class="auth-view">
+                        <div class="form-group">
+                            <label for="regFirstName" class="form-label">First Name</label>
+                            <input type="text" id="regFirstName" class="form-input" placeholder="John" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="regLastName" class="form-label">Last Name</label>
+                            <input type="text" id="regLastName" class="form-input" placeholder="Doe" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="regEmail" class="form-label">Email</label>
+                            <input type="email" id="regEmail" class="form-input" placeholder="john@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="regPhone" class="form-label">Phone Number</label>
+                            <input type="tel" id="regPhone" class="form-input" placeholder="Phone" required>
+                            <small class="muted" style="font-size: 0.75rem; display: block; margin-top: 0.25rem;">Format: +1234567890 (include country code)</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="regPass" class="form-label">Password</label>
+                            <input type="password" id="regPass" class="form-input" required>
+                        </div>
+                        <button type="button" id="btnRegister" class="btn">Create Account</button>
+                        <div class="message info mt12">After sign-up, check your email for the verification code.</div>
+
+                        <h3 class="mt16">Confirm Email</h3>
+                        <div class="form-group">
+                            <label for="confEmail" class="form-label">Email</label>
+                            <input type="email" id="confEmail" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="confCode" class="form-label">Verification Code</label>
+                            <input type="text" id="confCode" class="form-input">
+                        </div>
+                        <div class="row">
+                            <button type="button" id="btnConfirm" class="btn">Confirm</button>
+                            <button type="button" id="btnResend" class="btn secondary">Resend</button>
+                        </div>
+                        <div id="regMsg"></div>
+                    </div>
+
+                    <!-- Forgot Password View -->
+                    <div id="auth-forgot" class="auth-view">
+                        <h3>Reset Password</h3>
+                        <div class="form-group">
+                            <label for="fpEmail" class="form-label">Email</label>
+                            <input type="email" id="fpEmail" class="form-input">
+                        </div>
+                        <button type="button" id="btnForgot" class="btn">Send Reset Code</button>
+
+                        <h3 class="mt16">Confirm New Password</h3>
+                        <div class="form-group">
+                            <label for="fpConfEmail" class="form-label">Email</label>
+                            <input type="email" id="fpConfEmail" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="fpCode" class="form-label">Code</label>
+                            <input type="text" id="fpCode" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="fpNewPass" class="form-label">New Password</label>
+                            <input type="password" id="fpNewPass" class="form-input">
+                        </div>
+                        <button type="button" id="btnConfirmNew" class="btn">Set New Password</button>
+                        <div id="fpMsg"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app" class="hidden">
+        <header class="header">
+            <div class="header-content">
+                <div class="row">
+                    <h1>Admin Dashboard</h1>
+                    <div style="margin-left:auto; display:flex; align-items:center; gap:12px;">
+                        <div><span id="envLabel" class="mono"></span></div>
+                        <!-- <button
+                        id="envToggle"
+                        class="secondary small"
+                        type="button"
+                        aria-pressed="false"
+                        title="Switch environment"
+                        >
+                        Switch to <span id="envNextLabel">prod</span>
+                        </button> -->
+                        <label class="switch">
+                            <input id="envToggle" type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        <div class="badge">Signed in: <span id="who" class="mono"></span></div>
+                        <button id="btnSignOut" class="secondary small">Sign Out</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <div class="nav-content">
+                <button class="nav-tab active" data-tab="keys">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-key icon-outline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                    </svg>
+                </button>
+                <button class="nav-tab" data-tab="products">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-cart icon-outline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </button>
+                <button class="nav-tab" data-tab="offers">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-cake icon-outline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 15.546c-.523 0-1.046.151-1.5.454a2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.701 2.701 0 00-1.5-.454M9 6v2m3-2v2m3-2v2M9 3h.01M12 3h.01M15 3h.01M21 21v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7h18zm-3-9v-2a2 2 0 00-2-2H8a2 2 0 00-2 2v2h12z"></path>
+                    </svg>
+                </button>
+                <button class="nav-tab" data-tab="landing-pages">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon icon-rocket icon-outline">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path>
+                    </svg>
+                </button>
+                <button class="nav-tab" data-tab="orders">      
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-bell icon-outline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                    </svg>
+                </button>
+                <button class="nav-tab" data-tab="shipping">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon icon-truck icon-outline">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"></path>
+                    </svg>
+                </button>
+                <button class="nav-tab" data-tab="config">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-globe icon-solid" viewBox="0 0 20 20">
+                        <path d="M10 20a10 10 0 1 1 0-20 10 10 0 0 1 0 20zm2-2.25a8 8 0 0 0 4-2.46V9a2 2 0 0 1-2-2V3.07a7.95 7.95 0 0 0-3-1V3a2 2 0 0 1-2 2v1a2 2 0 0 1-2 2v2h3a2 2 0 0 1 2 2v5.75zm-4 0V15a2 2 0 0 1-2-2v-1h-.5A1.5 1.5 0 0 1 4 10.5V8H2.25A8.01 8.01 0 0 0 8 17.75z"></path>
+                    </svg>
+                </button>
+            </div>
+        </nav>
+
+        <main class="main">
+            <!-- Stripe Keys Tab -->
+            <div id="keys-tab" class="tab-content active">
+                <div class="card">
+                    <div class="pane">
+                        <h1>Tenant Stripe Keys</h1>
+                        <div class="muted">Use your tenant's <span class="mono">clientID</span> (the ID you pass from the offer page).</div>
+
+                        <h2 class="mt16">Lookup / Update</h2>
+                        <label>clientID</label>
+                        <input id="clientID" class="mono" placeholder="c85d5a3d-663e-4372-bc71-376881d5f63d" />
+
+                        <div class="row mt8">
+                            <button id="btnGet">Get</button>
+                            <button id="btnSave" class="secondary">Save</button>
+                        </div>
+
+                        <div class="grid grid-two mt12">
+                            <div>
+                                <label>pk_test</label><input id="pk_test" class="mono" autocomplete="off" />
+                                <label>sk_test (plaintext)</label><input id="sk_test" class="mono" autocomplete="off" />
+                                <label>wh_secret_test</label><input id="wh_test" class="mono" autocomplete="off" />
+                            </div>
+                            <div>
+                                <label>pk_live</label><input id="pk_live" class="mono" autocomplete="off" />
+                                <label>sk_live (plaintext)</label><input id="sk_live" class="mono" autocomplete="off" />
+                                <label>wh_secret_live</label><input id="wh_live" class="mono" autocomplete="off" />
+                            </div>
+                        </div>
+
+                        <div class="row mt16">
+                            <button id="btnVerify" title="Calls /admin/verify">Verify Webhook Secret</button>
+                            <div id="verifyMsg" class="muted"></div>
+                        </div>
+
+                        <div id="apiMsg" class="mt12 muted"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Tab -->
+            <div id="products-tab" class="tab-content">
+                <!-- Products List View -->
+                <div id="productsListSection">
+                    <div class="card">
+                        <div class="card-header">
+                            <h1 class="card-title">Product Management</h1>
+                            <div class="muted">Manage your Stripe products and their metadata</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="row">
+                                <button id="btnLoadProducts">Load Products</button>
+                                <button id="btnNewProduct" class="secondary">+ Create New Product</button>
+                            </div>
+                            
+                            <div id="productsMsg" class="mt12 muted"></div>
+                            
+                            <div id="productsListContainer" class="mt16">
+                                <div class="no-orders">Click "Load Products" to view your products</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Form View -->
+                <div id="productFormSection" class="hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h1 class="card-title" id="productFormTitle">Create New Product</h1>
+                        </div>
+                        <div class="card-content">
+                            <div id="productFormMsg" class="mt12 muted"></div>
+                            <form id="productForm" onsubmit="return false;">
+                                <!-- Basic Information -->
+                                <h2>Basic Information</h2>
+                                <div class="form-group">
+                                    <label for="productName">Product Name *</label>
+                                    <input type="text" id="productName" required placeholder="e.g. Premium Widget">
+                                </div>
+
+                                <!-- Price Management (only for editing existing products) -->
+                                <div id="priceManagementSection" class="hidden">
+                                    <h2 class="mt24">Price Management</h2>
+                                    <div class="muted mb12">Existing prices (prices cannot be edited, only added or archived)</div>
+                                    <div id="existingPricesContainer"></div>
+                                    <button type="button" id="btnAddNewPrice" class="small secondary mt12" style="width: auto;">+ Add New Price</button>
+                                </div>
+
+                                <!-- Pricing Section (only for new products) -->
+                                <div id="pricesSection">
+                                    <h2 class="mt24">Pricing</h2>
+                                    <div class="muted mb12">Add one or more prices for this product</div>
+                                    <div id="pricesContainer"></div>
+                                    <button type="button" id="btnAddPrice" class="small secondary mt12" style="width: auto;">+ Add Another Price</button>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="productDescription">Description</label>
+                                    <textarea id="productDescription" rows="3" placeholder="Describe your product..."></textarea>
+                                </div>
+                                
+                                <!-- Product Type (Physical/Digital) -->
+                                <h2 class="mt24">Product Type</h2>
+                                <div class="form-group">
+                                    <label for="productType">Type</label>
+                                    <select id="productType">
+                                        <option value="physical">Physical - Requires shipping</option>
+                                        <option value="non-physical">Non-Physical - Digital/Service (no shipping)</option>
+                                    </select>
+                                    <small class="muted">Physical products require shipping configuration. Non-physical products skip shipping.</small>
+                                </div>
+
+                                <!-- Product Category (Funnel Position) -->
+                                <h2 class="mt16">Product Category</h2>
+                                <div class="form-group">
+                                    <label for="productCategory">Category</label>
+                                    <select id="productCategory">
+                                        <option value="standard">Standard - Default Product</option>
+                                        <option value="basic">Basic - Entry Level (First in funnel, with upsell)</option>
+                                        <option value="upsell">Upsell - Post-Purchase Discounted Offer</option>
+                                        <option value="mid-tier">Mid-Tier - Middle Option</option>
+                                        <option value="premium">Premium - High-End Offer (Last in funnel)</option>
+                                        <option value="subscription">Subscription - Recurring Payment</option>
+                                        <option value="addon">Add-On - Supplementary Product</option>
+                                        <option value="bundle">Bundle - Multi-Product Package</option>
+                                    </select>
+                                    <small class="muted">Defines product position in sales funnel and landing page display order</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label style="display:flex;align-items:center;gap:8px;">
+                                        <input type="checkbox" id="productActive" checked style="width:auto;"/> 
+                                        Active (visible in Stripe)
+                                    </label>
+                                </div>
+
+                                <!-- Product Images -->
+                                <h2 class="mt24">Product Images</h2>
+                                <div class="form-group">
+                                    <label for="productImages">Image URLs (one per line)</label>
+                                    <textarea id="productImages" rows="3" placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"></textarea>
+                                    <small class="muted">Enter direct image URLs, one per line</small>
+                                </div>
+
+                                <!-- Package Dimensions -->
+                                <h2 class="mt24">Package Dimensions (for physical products only)</h2>
+                                <div class="grid grid-two">
+                                    <div>
+                                        <label for="packageLength">Length (inches)</label>
+                                        <input type="number" id="packageLength" value="10" min="1" step="0.1">
+                                    </div>
+                                    <div>
+                                        <label for="packageWidth">Width (inches)</label>
+                                        <input type="number" id="packageWidth" value="8" min="1" step="0.1">
+                                    </div>
+                                    <div>
+                                        <label for="packageHeight">Height (inches)</label>
+                                        <input type="number" id="packageHeight" value="4" min="1" step="0.1">
+                                    </div>
+                                    <div>
+                                        <label for="packageWeight">Weight (pounds)</label>
+                                        <input type="number" id="packageWeight" value="1" min="0.1" step="0.1">
+                                    </div>
+                                </div>
+
+                                <!-- Upsell Configuration -->
+                                <div id="upsellConfigSection" class="hidden">
+                                    <h2 class="mt24">Upsell Configuration</h2>
+                                    <div class="muted mb12">Select a product to offer as an upsell after purchase</div>
+                                    
+                                    <!-- Hidden fields to store selected values -->
+                                    <input type="hidden" id="upsellProductId">
+                                    <input type="hidden" id="upsellPriceId">
+                                    
+                                    <!-- Scrollable product selection -->
+                                    <div id="upsellProductsContainer" class="upsell-products-container">
+                                        <div class="muted">Loading products...</div>
+                                    </div>
+                                    
+                                    <div class="form-group mt12">
+                                        <label for="upsellOfferText">Upsell Offer Text</label>
+                                        <input type="text" id="upsellOfferText" placeholder="Yes, I accept the offer for only {{upsell_price}}!">
+                                        <small class="muted">Customize the text shown to customers for this upsell offer</small>
+                                    </div>
+                                </div>
+
+                                <!-- Page Configuration -->
+                                <h2 class="mt24">Landing Page Configuration</h2>
+                                <div class="muted mb12">Metadata for dynamic offer page generation</div>
+                                
+                                <div class="form-group">
+                                    <label for="heroTitle">Hero Title</label>
+                                    <input type="text" id="heroTitle" placeholder="Transform Your Life Today!">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="heroSubtitle">Hero Subtitle</label>
+                                    <input type="text" id="heroSubtitle" placeholder="The ultimate solution you've been waiting for">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="benefits">Benefits (pipe-separated)</label>
+                                    <textarea id="benefits" rows="3" placeholder="Benefit 1|Benefit 2|Benefit 3"></textarea>
+                                    <small class="muted">Separate each benefit with a pipe character (|)</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="guarantee">Guarantee Text</label>
+                                    <input type="text" id="guarantee" placeholder="30-day money-back guarantee">
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="row mt24">
+                                    <button type="button" id="btnSaveProduct">Save Product</button>
+                                    <button type="button" id="btnCancelProduct" class="secondary">Cancel</button>
+                                </div>
+                                <div id="productFormMsgBottom" class="mt12"></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Details Modal -->
+            <div id="productDetailsModal" class="modal-overlay" onclick="closeProductDetailsModal()">
+                <div class="modal-content" style="max-width: 600px; max-height: 85vh; overflow-y: auto;" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        Product Details
+                        <button class="modal-close-btn" onclick="closeProductDetailsModal()" title="Close">&times;</button>
+                    </div>
+                    <div class="modal-body" id="productDetailsBody"></div>
+                    <div class="modal-actions">
+                        <button onclick="closeProductDetailsModal()" class="secondary">Close</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Landing Pages content -->
+            <div id="landing-pages-tab" class="tab-content">
+                <div id="landingPagesListSection">
+                    <div class="card">
+                        <div class="card-header">
+                            <h1 class="card-title">Landing Page Generator</h1>
+                            <div class="muted">Create beautiful, high-converting landing pages with live preview</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="row">
+                                <button id="btnLoadLandingPages">Load Landing Pages</button>
+                                <button id="btnNewLandingPage" class="secondary">+ Create New Landing Page</button>
+                            </div>
+                            
+                            <div id="landingPageMsg" class="mt12 muted"></div>
+                            
+                            <div id="landingPagesListContainer" class="mt16">
+                                <div class="no-orders">Click "Load Landing Pages" to view your pages</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Landing Page Form View -->
+                <div id="landingPageFormSection" class="hidden">
+                    <div class="landing-page-editor">
+                        <!-- Left Panel: Form -->
+                        <div class="editor-panel editor-form">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h1 class="card-title" id="landingPageFormTitle">Create New Landing Page</h1>
+                                </div>
+                                <div class="card-content">
+                                    <form id="landingPageForm" onsubmit="return false;">
+                                        <!-- Basic Info -->
+                                        <h2>Basic Information</h2>
+                                        <div class="form-group">
+                                            <label for="pageName">Page Name (Internal) *</label>
+                                            <input type="text" id="pageName" required placeholder="Summer Sale 2025">
+                                            <small class="muted">Used for your reference only</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="seoPrefix">SEO-Friendly URL Prefix *</label>
+                                            <input type="text" id="seoPrefix" required placeholder="summer-sale-2025">
+                                            <small class="muted">Will appear in URL: yoursite.com/<strong>summer-sale-2025</strong>/checkout</small>
+                                        </div>
+
+                                        <!-- Template Selection -->
+                                        <h2 class="mt24">Template Type</h2>
+                                        <div class="form-group">
+                                            <label for="templateType">Choose Template</label>
+                                            <select id="templateType">
+                                                <option value="single-product-hero">Single Product Hero</option>
+                                                <option value="three-tier-pricing">Three-Tier Pricing</option>
+                                                <option value="four-tier-pricing">Four-Tier Pricing</option>
+                                                <option value="five-tier-pricing">Five-Tier Pricing</option>
+                                                <option value="sales-letter">Sales Letter (Long-Form)</option>
+                                                <option value="video-sales">Video Sales Page</option>
+                                                <option value="email-capture-lead">Email Capture / Lead Gen</option>
+                                                <option value="subscription-focus">Subscription Focus</option>
+                                                <option value="configurable-product">Configurable Product</option>
+                                                <option value="custom">Custom Layout</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Product Source Selection -->
+                                        <h2 class="mt24">Product Source</h2>
+                                        <div class="form-group">
+                                            <label for="productSourceMode">Choose how to add products</label>
+                                            <select id="productSourceMode">
+                                                <option value="offer">From Existing Offer</option>
+                                                <option value="manual">Manual Product Selection</option>
+                                            </select>
+                                            <small class="muted">Select an existing offer to auto-populate products, or choose products manually</small>
+                                        </div>
+
+                                        <!-- Offer Selection Section (shown when "From Existing Offer" is selected) -->
+                                        <div id="offerSelectionSection" class="hidden">
+                                            <div class="form-group">
+                                                <label for="landingPageOfferSelector">Select Offer</label>
+                                                <select id="landingPageOfferSelector">
+                                                    <option value="">-- Select an Offer --</option>
+                                                </select>
+                                                <small class="muted">Products from the selected offer will be automatically added below</small>
+                                            </div>
+                                            
+                                            <div class="message info mt12">
+                                                <strong>ℹ️ Using Offer Mode:</strong>
+                                                <ul style="margin: 8px 0 0 20px; padding: 0;">
+                                                    <li>Products will be loaded from the selected offer</li>
+                                                    <li>You can still customize tier labels and descriptions</li>
+                                                    <li>Changes to products won't affect the original offer</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <!-- Manual Product Section (shown when "Manual Product Selection" is selected) -->
+                                        <div id="manualProductSection">
+                                            <h2 class="mt24">Products</h2>
+                                            <div class="muted mb12">Select products to feature on this landing page</div>
+                                            <div id="landingProductsList"></div>
+                                            <button type="button" id="btnAddLandingProduct" class="small secondary mt12" style="width: auto;">+ Add Product</button>
+                                        </div>
+
+                                        <!-- Hero Content -->
+                                        <h2 class="mt24">Hero Section</h2>
+                                        <div class="form-group">
+                                            <label for="lpHeroTitle">Hero Title *</label>
+                                            <input type="text" id="lpHeroTitle" required placeholder="Transform Your Life Today!">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="lpHeroSubtitle">Hero Subtitle</label>
+                                            <input type="text" id="lpHeroSubtitle" placeholder="The ultimate solution you've been waiting for">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="lpGuarantee">Guarantee Text</label>
+                                            <input type="text" id="lpGuarantee" placeholder="30-day money-back guarantee">
+                                        </div>
+
+                                        <!-- Custom Fields (shown for configurable templates) -->
+                                        <div id="customFieldsSection" class="hidden">
+                                            <h2 class="mt24">Custom Form Fields</h2>
+                                            <div class="muted mb12">Add custom fields for size, color, personalization, etc.</div>
+                                            <div id="customFieldsList"></div>
+                                            <button type="button" id="btnAddCustomField" class="small secondary mt12" style="width: auto;">+ Add Field</button>
+                                        </div>
+
+                                        <!-- Email Capture Config (shown for email-capture template) -->
+                                        <div id="emailCaptureSection" class="hidden">
+                                            <h2 class="mt24">Email Capture Settings</h2>
+                                            <div class="form-group">
+                                                <label for="ctaText">CTA Button Text</label>
+                                                <input type="text" id="ctaText" placeholder="Get Instant Access">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="successMessage">Success Message</label>
+                                                <input type="text" id="successMessage" placeholder="Check your email!">
+                                            </div>
+                                        </div>
+
+                                        <!-- Layout Options -->
+                                        <h2 class="mt24">Layout Options</h2>
+                                        <div class="grid grid-two">
+                                            <div>
+                                                <label style="display:flex;align-items:center;gap:8px;">
+                                                    <input type="checkbox" id="showTestimonials" style="width:auto;">
+                                                    Show Testimonials
+                                                </label>
+                                            </div>
+                                            <div>
+                                                <label style="display:flex;align-items:center;gap:8px;">
+                                                    <input type="checkbox" id="showFaq" style="width:auto;">
+                                                    Show FAQ
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-two mt12">
+                                            <div>
+                                                <label for="colorPrimary">Primary Color</label>
+                                                <input type="color" id="colorPrimary" value="#007bff">
+                                            </div>
+                                            <div>
+                                                <label for="colorAccent">Accent Color</label>
+                                                <input type="color" id="colorAccent" value="#28a745">
+                                            </div>
+                                        </div>
+
+                                        <!-- Analytics -->
+                                        <h2 class="mt24">Analytics & Tracking</h2>
+                                        <div class="form-group">
+                                            <label for="googlePixel">Google Analytics ID</label>
+                                            <input type="text" id="googlePixel" placeholder="G-XXXXXXXXXX">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="metaPixel">Meta Pixel ID</label>
+                                            <input type="text" id="metaPixel" placeholder="123456789012345">
+                                        </div>
+
+                                        <!-- Advanced -->
+                                        <h2 class="mt24">Advanced Settings</h2>
+                                        <div class="form-group">
+                                            <label style="display:flex;align-items:center;gap:8px;">
+                                                <input type="checkbox" id="checkoutInSubfolder" style="width:auto;">
+                                                Place checkout in subfolder (/checkout/)
+                                            </label>
+                                            <small class="muted">Default: checkout page is at root of SEO prefix</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="customCss">Custom CSS</label>
+                                            <textarea id="customCss" rows="4" placeholder="/* Add your custom CSS here */" class="mono"></textarea>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="customJs">Custom JavaScript</label>
+                                            <textarea id="customJs" rows="4" placeholder="// Add your custom JavaScript here" class="mono"></textarea>
+                                        </div>
+
+                                        <!-- Action Buttons -->
+                                        <div class="row mt24">
+                                            <button type="button" id="btnSaveLandingPage">Save Draft</button>
+                                            <button type="button" id="btnPublishLandingPage" class="secondary">Publish to S3</button>
+                                            <button type="button" id="btnCancelLandingPage" class="secondary">Cancel</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Live Preview -->
+                        <div class="editor-panel editor-preview">
+                            <div class="preview-header">
+                                <div class="preview-header-left">
+                                    <button class="preview-toggle-btn" id="btnToggleForm" title="Hide form panel">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="11 17 6 12 11 7"></polyline>
+                                            <polyline points="18 17 13 12 18 7"></polyline>
+                                        </svg>
+                                        <span>Hide Form</span>
+                                    </button>
+                                    <h3>Live Preview</h3>
+                                </div>
+                                <div class="preview-controls">
+                                    <button class="small preview-device active" data-device="desktop">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                                        </svg>
+                                    </button>
+                                    <button class="small preview-device" data-device="mobile">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="preview-container">
+                                <iframe id="landingPagePreview" class="preview-iframe desktop"></iframe>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- A/B Test Modal (for future implementation) -->
+            <div id="abTestModal" class="modal-overlay">
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        Create A/B Test
+                        <button class="modal-close-btn" onclick="closeABTestModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="abTestForm">
+                            <div class="form-group">
+                                <label>Select Landing Pages to Test</label>
+                                <div id="abTestPagesList"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Traffic Split (%)</label>
+                                <div class="grid grid-two">
+                                    <input type="number" id="splitVariantA" value="50" min="0" max="100">
+                                    <input type="number" id="splitVariantB" value="50" min="0" max="100">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Test Duration</label>
+                                <select id="testDuration">
+                                    <option value="7">7 days</option>
+                                    <option value="14">14 days</option>
+                                    <option value="30">30 days</option>
+                                    <option value="-1">Until manually stopped</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Success Metric</label>
+                                <select id="successMetric">
+                                    <option value="conversions">Conversion Rate</option>
+                                    <option value="revenue">Total Revenue</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-actions">
+                        <button onclick="closeABTestModal()" class="secondary">Cancel</button>
+                        <button onclick="startABTest()">Start Test</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Offers Tab -->
+            <div id="offers-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h1 class="card-title">Offer Configuration</h1>
+                        <div class="muted">
+                            Manage offers for your client
+                            <span class="badge">Mode: <span id="currentMode">test</span></span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <!-- NO BASE URL FIELD - It's automatic! -->
+                        
+                        <div class="row" style="align-items: center;">
+                            <h2 style="margin: 0;">Offers</h2>
+                            <div style="display: flex; gap: 8px; margin-left: auto;">
+                                <button id="btnAddOffer" class="small secondary">+ Add Offer</button>
+                                <button id="btnRefreshOffers" class="small secondary">🔄 Refresh</button>
+                                <button id="btnSaveOffers" class="small">Save All</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Auto-generated URL preview -->
+                        <div class="muted mt12" style="padding: 8px; background: #f0f9ff; border-radius: 4px; font-size: 12px;">
+                            <strong>🌐 URLs will be generated as:</strong>
+                            <code id="previewUrl" style="display: block; margin-top: 4px;">
+                                Loading...
+                            </code>
+                        </div>
+                        
+                        <div id="offersMsg" class="mt12"></div>
+                        <div id="offersContainer" class="mt16">
+                            <div class="loading-spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div id="orders-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h1 class="card-title">Order Management</h1>
+                        <div class="muted">View and manage orders for your client</div>
+                    </div>
+                    <div class="card-content">
+                        <!-- Stats -->
+                        <div class="stats">
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-orders">0</span>
+                                <span class="stat-label">Total Unfulfilled Orders</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-revenue">$0.00</span>
+                                <span class="stat-label">Pending Revenue</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="avg-order">$0.00</span>
+                                <span class="stat-label">Average Order Value</span>
+                            </div>
+                        </div>
+
+                        <!-- Filters -->
+                        <div class="filters">
+                            <div class="filter-group">
+                                <input type="text" id="search-customer" placeholder="Search by customer name or email..."/>
+                                <input type="text" id="search-product" placeholder="Search by product..."/>
+                                <label style="display:flex;align-items:center;gap:8px;">
+                                    <input type="checkbox" id="toggle-fulfilled" style="width:auto;"/> Show fulfilled
+                                </label>
+                                <button onclick="clearOrderFilters()" class="secondary small">Clear</button>
+                                <button onclick="refreshOrders()" class="small">Refresh</button>
+                            </div>
+                        </div>
+
+                        <!-- Messages -->
+                        <div id="order-error-container"></div>
+                        <div id="order-success-container"></div>
+
+                        <!-- Orders List -->
+                        <div id="orders-list">
+                            <div class="loading-spinner"></div>
+                        </div>
+
+                        <!-- Load More -->
+                        <div class="load-more-container" id="load-more-container" style="display:none">
+                            <button class="load-more-btn" id="load-more-btn">Load More Orders</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping Tab -->
+            <div id="shipping-tab" class="tab-content">
+                <div class="card">
+                    <div class="pane">
+                        <h1>Shipping Configuration</h1>
+                        <div class="muted">Configure automated shipping label generation for your orders.</div>
+
+                        <h2 class="mt16">Shipping Provider</h2>
+                        <label>Select Provider</label>
+                        <select id="shippingProvider">
+                            <option value="">-- No Provider (Ship Manually) --</option>
+                            <option value="shippo">Shippo</option>
+                            <option value="easypost">EasyPost</option>
+                            <option value="shipstation">ShipStation</option>
+                            <option value="easyship">EasyShip</option>
+                        </select>
+
+                        <div id="shippingApiKeySection" class="mt16 hidden">
+                            <label>API Key</label>
+                            <input id="shippingApiKey" class="mono" type="password" placeholder="Enter API key"/>
+                            
+                            <div id="shipstationSecretSection" class="mt12 hidden">
+                                <label>API Secret (ShipStation only)</label>
+                                <input id="shippingApiSecret" class="mono" type="password" placeholder="Enter API secret"/>
+                            </div>
+
+                            <label class="mt12" style="display:flex;align-items:center;gap:8px;">
+                                <input type="checkbox" id="shippingTestMode" checked style="width:auto;"/> Test Mode
+                            </label>
+                        </div>
+
+                        <h2 class="mt24">Default Ship-From Address</h2>
+                        <div class="grid grid-two">
+                            <div>
+                                <label>Company Name</label>
+                                <input id="shipFromName" placeholder="Your Company Inc."/>
+                                <label>Street Address</label>
+                                <input id="shipFromStreet1" placeholder="123 Main Street"/>
+                                <label>Apt/Suite (optional)</label>
+                                <input id="shipFromStreet2" placeholder="Suite 100"/>
+                                <label>City</label>
+                                <input id="shipFromCity" placeholder="San Francisco"/>
+                            </div>
+                            <div>
+                                <label>State/Province</label>
+                                <input id="shipFromState" placeholder="CA"/>
+                                <label>ZIP/Postal Code</label>
+                                <input id="shipFromZip" placeholder="94105"/>
+                                <label>Country Code</label>
+                                <input id="shipFromCountry" placeholder="US" value="US"/>
+                                <label>Phone</label>
+                                <input id="shipFromPhone" placeholder="+1-555-0100"/>
+                            </div>
+                        </div>
+
+                        <h2 class="mt24">Default Package Dimensions</h2>
+                        <div class="grid grid-two">
+                            <div>
+                                <label>Length (inches)</label>
+                                <input id="parcelLength" type="number" value="10" min="1"/>
+                                <label>Width (inches)</label>
+                                <input id="parcelWidth" type="number" value="8" min="1"/>
+                            </div>
+                            <div>
+                                <label>Height (inches)</label>
+                                <input id="parcelHeight" type="number" value="4" min="1"/>
+                                <label>Weight (pounds)</label>
+                                <input id="parcelWeight" type="number" value="1" min="0.1" step="0.1"/>
+                            </div>
+                        </div>
+
+                        <h2 class="mt24">Automation Options</h2>
+                        <label style="display:flex;align-items:center;gap:8px;">
+                            <input type="checkbox" id="autoFulfill" style="width:auto;"/> 
+                            Auto-create shipping labels on payment success
+                        </label>
+                        <div class="muted mt8">When enabled, labels will be automatically created via webhook after successful payments.</div>
+
+                        <div class="row mt24">
+                            <button id="btnSaveShipping">Save Shipping Config</button>
+                            <button id="btnTestShipping" class="secondary">Test Connection</button>
+                        </div>
+
+                        <div id="shippingMsg" class="mt12 muted"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Config Tab -->
+            <div id="config-tab" class="tab-content">
+                <div class="card">
+                    <div class="pane">
+                        <h1>Tenant Configuration</h1>
+                        <div class="muted">Customize email messages sent to customers for various events.</div>
+
+                        <!-- SMS Notification Phone Number -->
+                        <div class="mt24">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label style="margin: 0; font-weight: 600;">📱 SMS Notification Phone Number</label>
+                                <button id="btnSaveSmsPhone" class="small">Save</button>
+                            </div>
+                            <input type="tel" id="smsNotificationPhone" class="form-input" placeholder="Phone number for order notifications">
+                            <div class="muted mt8" style="font-size: 11px;">Enter phone number to receive SMS notifications for new orders. Format: +1234567890 (include country code)</div>
+                        </div>
+
+                        <div class="mt24">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label style="margin: 0; font-weight: 600;">Just for You Message</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="btnDefaultJustForYou" class="small secondary">Default</button>
+                                    <button id="btnSaveJustForYou" class="small">Save</button>
+                                </div>
+                            </div>
+                            <textarea id="msgJustForYou" rows="4" placeholder="Message shown to customers on personalized offers..."></textarea>
+                            <div class="muted mt8" style="font-size: 11px;">Shown on offer pages as a personalized message</div>
+                        </div>
+
+                        <div class="mt24">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label style="margin: 0; font-weight: 600;">Order Fulfilled Message</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="btnDefaultOrderFulfilled" class="small secondary">Default</button>
+                                    <button id="btnSaveOrderFulfilled" class="small">Save</button>
+                                </div>
+                            </div>
+                            <textarea id="msgOrderFulfilled" rows="6" placeholder="Your order has been shipped!&#10;&#10;Tracking number: {tracking_number}&#10;Track your package: {tracking_url}"></textarea>
+                            <div class="muted mt8" style="font-size: 11px;">Sent when shipping label is created. Use {tracking_number} and {tracking_url} as placeholders.</div>
+                        </div>
+
+                        <div class="mt24">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label style="margin: 0; font-weight: 600;">Refund Message</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="btnDefaultRefund" class="small secondary">Default</button>
+                                    <button id="btnSaveRefund" class="small">Save</button>
+                                </div>
+                            </div>
+                            <textarea id="msgRefund" rows="4" placeholder="Your refund has been processed. Please allow 5-10 business days for the funds to appear in your account."></textarea>
+                            <div class="muted mt8" style="font-size: 11px;">Sent when a refund is issued via Stripe</div>
+                        </div>
+
+                        <div class="mt24">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label style="margin: 0; font-weight: 600;">Return Label Message</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="btnDefaultReturnLabel" class="small secondary">Default</button>
+                                    <button id="btnSaveReturnLabel" class="small">Save</button>
+                                </div>
+                            </div>
+                            <textarea id="msgReturnLabel" rows="6" placeholder="A return label has been created for your order.&#10;&#10;Return tracking: {tracking_number}&#10;Download label: {label_url}"></textarea>
+                            <div class="muted mt8" style="font-size: 11px;">Sent when a return shipping label is created. Use {tracking_number} and {label_url} as placeholders.</div>
+                        </div>
+
+                        <div class="mt24">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label style="margin: 0; font-weight: 600;">Thank You Message</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="btnDefaultThankYou" class="small secondary">Default</button>
+                                    <button id="btnSaveThankYou" class="small">Save</button>
+                                </div>
+                            </div>
+                            <textarea id="msgThankYou" rows="4" placeholder="Thank you for your order! We appreciate your business."></textarea>
+                            <div class="muted mt8" style="font-size: 11px;">Sent as order confirmation after successful payment</div>
+                        </div>
+
+                        <div class="row mt24">
+                            <button id="btnSaveAllConfig" style="background: var(--accent);">Save All Messages</button>
+                            <button id="btnLoadDefaultsAll" class="secondary">Load All Defaults</button>
+                        </div>
+
+                        <div id="configMsg" class="mt12 muted"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Shipping Modal -->
+    <div id="shippingModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header" id="modalTitle">Confirm Shipping Label</div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-actions">
+                <button id="modalCancel" class="secondary">Cancel</button>
+                <button id="modalEdit" class="secondary">Change Carrier/Rate</button>
+                <button id="modalOk">Create Label</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.10/dist/amazon-cognito-identity.min.js"></script>
+    
+    <!-- Core scripts - Always loaded -->
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/stripe-keys.js"></script>
+    <script src="js/tenant-config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/template-library.js"></script>
+</body>
+</html>
