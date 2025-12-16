@@ -595,6 +595,31 @@ img {
     height: 20px;
 }
 
+.header-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    position: relative;
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.header-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.header-btn .icon {
+    width: 20px;
+    height: 20px;
+}
+
 .notification-badge {
     position: absolute;
     top: 6px;
@@ -1387,6 +1412,27 @@ table tbody tr:hover,
     color: var(--text-inverse);
 }
 
+/* Environment Badge */
+.env-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+}
+
+.env-badge.dev {
+    background-color: var(--color-warning-bg);
+    color: var(--color-warning);
+}
+
+.env-badge.prod {
+    background-color: var(--color-success-bg);
+    color: var(--color-success);
+}
+
 /* ======== ALERTS / MESSAGES ======== */
 .alert, .message {
     padding: var(--spacing-4);
@@ -2156,7 +2202,7 @@ table tbody tr:hover,
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--spacing-4);
+    gap: var(--spacing-6);
 }
 
 .content-grid {
