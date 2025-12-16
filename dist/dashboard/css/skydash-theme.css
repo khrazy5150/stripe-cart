@@ -2826,7 +2826,9 @@ table tbody tr:hover,
     .offer-card-media img,
     .offer-card-placeholder {
         width: 100%;
-        height: 160px;
+        max-width: 200px;
+        height: auto;
+        max-height: 160px;
     }
 }
 
