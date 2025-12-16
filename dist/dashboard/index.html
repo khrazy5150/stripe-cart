@@ -6,8 +6,7 @@
     <title>Admin Dashboard</title>
     <meta name="description" content="Admin Dashboard - Manage your business operations">
     <link rel="icon" type="image/x-icon" href="https://images.juniorbay.com/icon/favicon.png">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/landing-pages-styles.css">
+    <link rel="stylesheet" href="css/skydash-theme.css">
     <link rel="stylesheet" href="https://juniorbay.com/vendor/intl-tel-input/25.11.2/build/css/intlTelInput.min.css">
 </head>
 <body>
@@ -75,9 +74,7 @@
                     <div class="form-group">
                         <label for="regPhone" class="form-label">Phone Number</label>
                         <input type="tel" id="regPhone" class="form-input" placeholder="Phone" required>
-                        <small class="muted" style="font-size: 0.75rem; display: block; margin-top: 0.25rem;">
-                            Format: +1234567890 (include country code)
-                        </small>
+                        <span class="form-text">Format: +1234567890 (include country code)</span>
                     </div>
                     <div class="form-group">
                         <label for="regPass" class="form-label">Password</label>
@@ -86,7 +83,9 @@
                     <button type="button" id="btnRegister" class="login-btn btn">Create Account</button>
 
                     <div class="alert alert-info mt-4">
-                        After sign-up, check your email for the verification code.
+                        <div class="alert-content">
+                            After sign-up, check your email for the verification code.
+                        </div>
                     </div>
 
                     <h3 class="mt-4">Confirm Email</h3>
@@ -99,8 +98,8 @@
                         <input type="text" id="confCode" class="form-input">
                     </div>
                     <div class="flex gap-2">
-                        <button type="button" id="btnConfirm" class="btn">Confirm</button>
-                        <button type="button" id="btnResend" class="btn secondary">Resend</button>
+                        <button type="button" id="btnConfirm" class="btn btn-primary">Confirm</button>
+                        <button type="button" id="btnResend" class="btn btn-secondary">Resend</button>
                     </div>
                     <div id="regMsg" class="mt-4"></div>
                 </div>
@@ -254,10 +253,13 @@
                         </svg>
                     </button>
                     <div class="search-box">
-                        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                        <input type="text" class="search-input" placeholder="Search... (Ctrl+K)">
+                        <input type="search" class="search-input" placeholder="Search... (Ctrl+K)">
+                        <span class="search-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="m21 21-4.35-4.35"/>
+                            </svg>
+                        </span>
                     </div>
                 </div>
 
@@ -328,55 +330,55 @@
                 <div id="dashboard-tab" class="tab-content active">
                     <!-- Stats Grid -->
                     <div class="stats-grid mb-6">
-                        <div class="stat-card">
-                            <div class="stat-icon primary">
+                        <div class="stats-card">
+                            <div class="stats-icon primary">
                                 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                 </svg>
                             </div>
-                            <div class="stat-content">
-                                <div class="stat-label">Total Orders</div>
-                                <div class="stat-value" id="statOrdersValue">--</div>
-                                <div class="stat-change" id="statOrdersMeta">Connecting to Stripe…</div>
+                            <div class="stats-content">
+                                <div class="stats-label">Total Orders</div>
+                                <div class="stats-value" id="statOrdersValue">--</div>
+                                <div class="stats-change" id="statOrdersMeta">Connecting to Stripe…</div>
                             </div>
                         </div>
 
-                        <div class="stat-card">
-                            <div class="stat-icon success">
+                        <div class="stats-card">
+                            <div class="stats-icon success">
                                 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
-                            <div class="stat-content">
-                                <div class="stat-label">Revenue</div>
-                                <div class="stat-value" id="statRevenueValue">--</div>
-                                <div class="stat-change" id="statRevenueMeta">Connecting to Stripe…</div>
+                            <div class="stats-content">
+                                <div class="stats-label">Revenue</div>
+                                <div class="stats-value" id="statRevenueValue">--</div>
+                                <div class="stats-change" id="statRevenueMeta">Connecting to Stripe…</div>
                             </div>
                         </div>
 
-                        <div class="stat-card">
-                            <div class="stat-icon warning">
+                        <div class="stats-card">
+                            <div class="stats-icon warning">
                                 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                 </svg>
                             </div>
-                            <div class="stat-content">
-                                <div class="stat-label">Customers</div>
-                                <div class="stat-value" id="statCustomersValue">--</div>
-                                <div class="stat-change" id="statCustomersMeta">Connecting to Stripe…</div>
+                            <div class="stats-content">
+                                <div class="stats-label">Customers</div>
+                                <div class="stats-value" id="statCustomersValue">--</div>
+                                <div class="stats-change" id="statCustomersMeta">Connecting to Stripe…</div>
                             </div>
                         </div>
 
-                        <div class="stat-card">
-                            <div class="stat-icon danger">
+                        <div class="stats-card">
+                            <div class="stats-icon danger">
                                 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                                 </svg>
                             </div>
-                            <div class="stat-content">
-                                <div class="stat-label">Products</div>
-                                <div class="stat-value" id="statProductsValue">--</div>
-                                <div class="stat-change" id="statProductsMeta">Connecting to Stripe…</div>
+                            <div class="stats-content">
+                                <div class="stats-label">Products</div>
+                                <div class="stats-value" id="statProductsValue">--</div>
+                                <div class="stats-change" id="statProductsMeta">Connecting to Stripe…</div>
                             </div>
                         </div>
                     </div>
@@ -387,11 +389,13 @@
                         <div class="card">
                             <div class="card-header">
                                 <h3 class="card-title">Recent Orders</h3>
-                                <button class="btn btn-secondary btn-sm" id="btnViewAllOrders">View All</button>
+                                <div class="card-actions">
+                                    <button class="btn btn-secondary btn-sm" id="btnViewAllOrders">View All</button>
+                                </div>
                             </div>
                             <div class="card-body">
-                                <div class="table-container">
-                                    <table class="data-table">
+                                <div class="table-wrapper">
+                                    <table class="table">
                                         <thead>
                                             <tr>
                                                 <th>Date</th>
@@ -564,7 +568,7 @@
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Product Management</h3>
-                            <div class="flex gap-2">
+                            <div class="card-actions">
                                 <button id="btnLoadProducts" class="btn btn-secondary btn-sm">Load Products</button>
                                 <button id="btnCreateProduct" class="btn btn-primary btn-sm">+ Create New Product</button>
                             </div>
@@ -580,7 +584,7 @@
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Offer Configuration</h3>
-                            <div class="flex gap-2">
+                            <div class="card-actions">
                                 <button id="btnAddOffer" class="btn btn-secondary btn-sm" disabled>+ Add Offer</button>
                                 <button id="btnLoadOffers" class="btn btn-secondary btn-sm">Load Offers</button>
                                 <button id="btnSaveOffers" class="btn btn-primary btn-sm" disabled>Save All</button>
@@ -597,7 +601,7 @@
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Landing Pages</h3>
-                            <div class="flex gap-2">
+                            <div class="card-actions">
                                 <button class="btn btn-secondary btn-sm">Load Pages</button>
                                 <button class="btn btn-primary btn-sm">+ Create New Page</button>
                             </div>
@@ -618,29 +622,29 @@
                         <div class="card-body">
                             <!-- Order Stats -->
                             <div class="stats-grid mb-6" style="grid-template-columns: repeat(3, 1fr);">
-                                <div class="stat-card">
-                                    <div class="stat-content">
-                                        <div class="stat-label">Total Unfulfilled</div>
-                                        <div class="stat-value">12</div>
+                                <div class="stats-card">
+                                    <div class="stats-content">
+                                        <div class="stats-label">Total Unfulfilled</div>
+                                        <div class="stats-value">12</div>
                                     </div>
                                 </div>
-                                <div class="stat-card">
-                                    <div class="stat-content">
-                                        <div class="stat-label">Pending Revenue</div>
-                                        <div class="stat-value">$2,450</div>
+                                <div class="stats-card">
+                                    <div class="stats-content">
+                                        <div class="stats-label">Pending Revenue</div>
+                                        <div class="stats-value">$2,450</div>
                                     </div>
                                 </div>
-                                <div class="stat-card">
-                                    <div class="stat-content">
-                                        <div class="stat-label">Avg. Order Value</div>
-                                        <div class="stat-value">$204</div>
+                                <div class="stats-card">
+                                    <div class="stats-content">
+                                        <div class="stats-label">Avg. Order Value</div>
+                                        <div class="stats-value">$204</div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Orders Table -->
-                            <div class="table-container">
-                                <table class="data-table">
+                            <div class="table-wrapper">
+                                <table class="table">
                                     <thead>
                                         <tr>
                                             <th>Order ID</th>
@@ -657,7 +661,7 @@
                                             <td>John Smith</td>
                                             <td>Dec 4, 2025</td>
                                             <td>$124.00</td>
-                                            <td><span class="badge warning">Unfulfilled</span></td>
+                                            <td><span class="badge badge-warning">Unfulfilled</span></td>
                                             <td><button class="btn btn-secondary btn-sm">View</button></td>
                                         </tr>
                                     </tbody>
@@ -761,7 +765,7 @@
                                     <option value="physical">Physical - Requires shipping</option>
                                     <option value="non-physical">Non-Physical - Digital/Service (no shipping)</option>
                                 </select>
-                                <small class="muted">Physical products require shipping configuration. Non-physical products skip shipping.</small>
+                                <span class="form-text">Physical products require shipping configuration. Non-physical products skip shipping.</span>
                             </div>
 
                             <h2 class="mt16">Product Category</h2>
@@ -777,7 +781,7 @@
                                     <option value="addon">Add-On - Supplementary Product</option>
                                     <option value="bundle">Bundle - Multi-Product Package</option>
                                 </select>
-                                <small class="muted">Defines product position in sales funnel and landing page display order</small>
+                                <span class="form-text">Defines product position in sales funnel and landing page display order</span>
                             </div>
                             
                             <div class="form-group">
@@ -791,7 +795,7 @@
                             <div class="form-group">
                                 <label for="productImages">Image URLs (one per line)</label>
                                 <textarea id="productImages" rows="3" placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"></textarea>
-                                <small class="muted">Enter direct image URLs, one per line</small>
+                                <span class="form-text">Enter direct image URLs, one per line</span>
                             </div>
 
                             <h2 class="mt24">Package Dimensions (for physical products only)</h2>
@@ -828,7 +832,7 @@
                                 <div class="form-group mt-3">
                                     <label for="upsellOfferText">Upsell Offer Text</label>
                                     <input type="text" id="upsellOfferText" placeholder="Yes, I accept the offer for only {{upsell_price}}!">
-                                    <small class="muted">Customize the text shown to customers for this upsell offer</small>
+                                    <span class="form-text">Customize the text shown to customers for this upsell offer</span>
                                 </div>
                             </div>
 
@@ -848,7 +852,7 @@
                             <div class="form-group">
                                 <label for="benefits">Benefits (pipe-separated)</label>
                                 <textarea id="benefits" rows="3" placeholder="Benefit 1|Benefit 2|Benefit 3"></textarea>
-                                <small class="muted">Separate each benefit with a pipe character (|)</small>
+                                <span class="form-text">Separate each benefit with a pipe character (|)</span>
                             </div>
                             
                             <div class="form-group">
