@@ -7,6 +7,7 @@
     <meta name="description" content="Admin Dashboard - Manage your business operations">
     <link rel="icon" type="image/x-icon" href="https://images.juniorbay.com/icon/favicon.png">
     <link rel="stylesheet" href="css/skydash-theme.css">
+    <link rel="stylesheet" href="css/app.css">
     <link rel="stylesheet" href="https://juniorbay.com/vendor/intl-tel-input/25.11.2/build/css/intlTelInput.min.css">
 </head>
 <body>
@@ -585,7 +586,7 @@
                         <div class="card-header">
                             <h3 class="card-title">Offer Configuration</h3>
                             <div class="card-actions">
-                                <button id="btnAddOffer" class="btn btn-secondary btn-sm" disabled>+ Add Offer</button>
+                                <button id="btnAddOffer" class="btn btn-secondary btn-sm">+ Add Offer</button>
                                 <button id="btnLoadOffers" class="btn btn-secondary btn-sm">Load Offers</button>
                                 <button id="btnSaveOffers" class="btn btn-primary btn-sm" disabled>Save All</button>
                             </div>
@@ -871,5 +872,75 @@
             </div>
         </div>
     </div>
+
+    <!-- Add Offer Modal -->
+    <div class="modal" id="addOfferModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Offer</h3>
+                <button class="modal-close" onclick="closeAddOfferModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="addOfferForm">
+                    <div class="form-group">
+                        <label class="form-label required">Offer Name</label>
+                        <input type="text" id="offerName" class="form-input" placeholder="e.g., Summer Sale Bundle" required>
+                        <span class="form-text">A descriptive name for this offer</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Slug</label>
+                        <input type="text" id="offerSlug" class="form-input font-mono" placeholder="e.g., summer-sale-bundle" required>
+                        <span class="form-text">URL-friendly identifier (lowercase, no spaces)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="offerActive" checked>
+                            <label class="form-check-label" for="offerActive">Active (visible to customers)</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Products</label>
+                        <button type="button" class="btn btn-secondary btn-block" id="btnSelectProducts">
+                            Select Products Visually
+                        </button>
+                        <div id="selectedProductsList" class="selected-products-list" style="margin-top: 0.75rem;"></div>
+                    </div>
+
+                    <div id="addOfferMessage"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddOfferModal()">Cancel</button>
+                <button class="btn btn-primary" id="btnSaveNewOffer">Create Offer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Offer Product Selector Modal -->
+    <div class="modal modal-large" id="addOfferProductSelectorModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Select Products for Offer</h3>
+                <button class="modal-close" onclick="closeAddOfferProductSelector()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <input type="text" id="addOfferProductSearchInput" class="form-input" placeholder="Search products..." />
+                </div>
+                <div id="addOfferProductSelectorMessage" class="mb-3"></div>
+                <div id="addOfferProductSelectorGrid" class="product-grid"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddOfferProductSelector()">Cancel</button>
+                <button class="btn btn-primary" onclick="applyAddOfferProductSelection()">Apply Selection</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

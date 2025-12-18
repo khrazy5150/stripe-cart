@@ -33,6 +33,7 @@ const dashboardOffersState = {
 
     function init() {
         bindLoadButton();
+        bindAddButton();
         bindCardActions();
         if (dashboardOffersState.offers.length) {
             renderOfferCards();
@@ -65,6 +66,442 @@ const dashboardOffersState = {
             editOffer(key);
         } else if (action === 'delete') {
             deleteOffer(key);
+        }
+    }
+
+    function bindAddButton() {
+        const btn = document.getElementById('btnAddOffer');
+        if (!btn || btn.dataset.addOfferBound === 'true') return;
+        btn.dataset.addOfferBound = 'true';
+        btn.addEventListener('click', openAddOfferModal);
+
+        // Bind save button
+        const saveBtn = document.getElementById('btnSaveNewOffer');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', saveNewOffer);
+        }
+
+        // Bind product selector button
+        const selectProductsBtn = document.getElementById('btnSelectProducts');
+        if (selectProductsBtn) {
+            selectProductsBtn.addEventListener('click', openAddOfferProductSelector);
+        }
+
+        // Bind product search
+        const productSearchInput = document.getElementById('addOfferProductSearchInput');
+        if (productSearchInput) {
+            productSearchInput.addEventListener('input', (e) => {
+                filterAddOfferProducts(e.target.value);
+            });
+        }
+
+        // Auto-generate slug from name
+        const nameInput = document.getElementById('offerName');
+        const slugInput = document.getElementById('offerSlug');
+        if (nameInput && slugInput) {
+            nameInput.addEventListener('input', () => {
+                if (!slugInput.dataset.manuallyEdited) {
+                    slugInput.value = generateSlug(nameInput.value);
+                }
+            });
+            slugInput.addEventListener('input', () => {
+                slugInput.dataset.manuallyEdited = 'true';
+            });
+        }
+
+        // Close modal on overlay click
+        const modal = document.getElementById('addOfferModal');
+        if (modal) {
+            const overlay = modal.querySelector('.modal-overlay');
+            if (overlay) {
+                overlay.addEventListener('click', closeAddOfferModal);
+            }
+        }
+
+        // Close product selector on overlay click
+        const productModal = document.getElementById('addOfferProductSelectorModal');
+        if (productModal) {
+            const overlay = productModal.querySelector('.modal-overlay');
+            if (overlay) {
+                overlay.addEventListener('click', closeAddOfferProductSelector);
+            }
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('addOfferModal');
+                const productModal = document.getElementById('addOfferProductSelectorModal');
+                if (productModal && productModal.classList.contains('active')) {
+                    closeAddOfferProductSelector();
+                } else if (modal && modal.classList.contains('active')) {
+                    closeAddOfferModal();
+                }
+            }
+        });
+    }
+
+    function openAddOfferModal() {
+        const modal = document.getElementById('addOfferModal');
+        if (!modal) return;
+
+        // Reset form
+        const form = document.getElementById('addOfferForm');
+        if (form) form.reset();
+
+        // Clear manually edited flag
+        const slugInput = document.getElementById('offerSlug');
+        if (slugInput) delete slugInput.dataset.manuallyEdited;
+
+        // Clear messages
+        const msgEl = document.getElementById('addOfferMessage');
+        if (msgEl) msgEl.innerHTML = '';
+
+        // Reset selected products
+        selectedProductIds.clear();
+        tempSelectedProductIds.clear();
+        updateSelectedProductsDisplay();
+
+        modal.classList.add('active');
+    }
+
+    function closeAddOfferModal() {
+        const modal = document.getElementById('addOfferModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+
+    function generateSlug(text) {
+        return text
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+
+    // ========== PRODUCT SELECTOR ==========
+
+    // State for product selection
+    let allProducts = [];
+    let selectedProductIds = new Set();
+    let tempSelectedProductIds = new Set();
+
+    async function openAddOfferProductSelector() {
+        const modal = document.getElementById('addOfferProductSelectorModal');
+        if (!modal) return;
+
+        const msgEl = document.getElementById('addOfferProductSelectorMessage');
+        const gridEl = document.getElementById('addOfferProductSelectorGrid');
+
+        // Copy current selections to temp
+        tempSelectedProductIds = new Set(selectedProductIds);
+
+        // Reset button text
+        updateApplyButtonText();
+
+        // Show modal
+        modal.classList.add('active');
+
+        // Load products if not already loaded
+        if (allProducts.length === 0) {
+            try {
+                if (msgEl) {
+                    msgEl.innerHTML = '<div class="alert alert-info"><div class="alert-content">Loading products...</div></div>';
+                }
+                if (gridEl) {
+                    gridEl.innerHTML = '';
+                }
+
+                const clientID = resolveClientId();
+                if (!clientID) {
+                    if (msgEl) {
+                        msgEl.innerHTML = '<div class="alert alert-danger"><div class="alert-content">No client ID found</div></div>';
+                    }
+                    return;
+                }
+
+                const response = await authedFetch(`/admin/products?clientID=${encodeURIComponent(clientID)}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Client-Id': clientID
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(response.body?.error || `Failed to load products: HTTP ${response.status}`);
+                }
+
+                allProducts = response.body?.products || [];
+
+                if (msgEl) {
+                    msgEl.innerHTML = '';
+                }
+
+                renderAddOfferProductGrid(allProducts);
+
+            } catch (error) {
+                console.error('Load products error:', error);
+                if (msgEl) {
+                    msgEl.innerHTML = `<div class="alert alert-danger"><div class="alert-content">Failed to load products: ${error.message}</div></div>`;
+                }
+            }
+        } else {
+            // Products already loaded, just render
+            if (msgEl) {
+                msgEl.innerHTML = '';
+            }
+            renderAddOfferProductGrid(allProducts);
+        }
+    }
+
+    function closeAddOfferProductSelector() {
+        const modal = document.getElementById('addOfferProductSelectorModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+        // Clear search
+        const searchInput = document.getElementById('addOfferProductSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        // Reset button text
+        const applyBtn = document.querySelector('#addOfferProductSelectorModal .btn-primary');
+        if (applyBtn) {
+            applyBtn.textContent = 'Apply Selection';
+        }
+    }
+
+    function renderAddOfferProductGrid(products) {
+        const gridEl = document.getElementById('addOfferProductSelectorGrid');
+        if (!gridEl) return;
+
+        if (products.length === 0) {
+            gridEl.innerHTML = '<div class="selected-products-empty">No products found</div>';
+            return;
+        }
+
+        gridEl.innerHTML = products.map(product => {
+            const isSelected = tempSelectedProductIds.has(product.id);
+            const price = product.lowest_price ? formatCurrency(product.lowest_price) : 'N/A';
+            const image = product.images && product.images.length > 0 ? product.images[0] : null;
+
+            return `
+                <div class="product-card ${isSelected ? 'selected' : ''}" data-product-id="${product.id}">
+                    <div class="product-card-image-container">
+                        ${image
+                            ? `<img src="${image}" alt="${product.name}" class="product-card-image">`
+                            : '<div class="product-card-image no-image">No Image</div>'
+                        }
+                        <div class="product-card-checkmark"></div>
+                    </div>
+                    <div class="product-card-content">
+                        <div class="product-card-name">${product.name || 'Unnamed Product'}</div>
+                        <div class="product-card-price">${price}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers to cards
+        gridEl.querySelectorAll('.product-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const productId = card.dataset.productId;
+                toggleAddOfferProductSelection(productId);
+            });
+        });
+    }
+
+    function toggleAddOfferProductSelection(productId) {
+        if (tempSelectedProductIds.has(productId)) {
+            tempSelectedProductIds.delete(productId);
+        } else {
+            tempSelectedProductIds.add(productId);
+        }
+
+        // Update card visual state
+        const card = document.querySelector(`#addOfferProductSelectorGrid [data-product-id="${productId}"]`);
+        if (card) {
+            const isSelected = tempSelectedProductIds.has(productId);
+            if (isSelected) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+            console.log(`Product ${productId} ${isSelected ? 'selected' : 'deselected'}`);
+        } else {
+            console.warn(`Card not found for product ${productId}`);
+        }
+
+        // Update apply button text with count
+        updateApplyButtonText();
+    }
+
+    function updateApplyButtonText() {
+        const applyBtn = document.querySelector('#addOfferProductSelectorModal .btn-primary');
+        const count = tempSelectedProductIds.size;
+
+        if (applyBtn) {
+            if (count === 0) {
+                applyBtn.textContent = 'Apply Selection';
+            } else if (count === 1) {
+                applyBtn.textContent = '1 selected';
+            } else {
+                applyBtn.textContent = `${count} selected`;
+            }
+        }
+    }
+
+    function filterAddOfferProducts(searchTerm) {
+        const term = searchTerm.toLowerCase().trim();
+        if (!term) {
+            renderAddOfferProductGrid(allProducts);
+            return;
+        }
+
+        const filtered = allProducts.filter(product => {
+            const name = (product.name || '').toLowerCase();
+            return name.includes(term);
+        });
+
+        renderAddOfferProductGrid(filtered);
+    }
+
+    function applyAddOfferProductSelection() {
+        // Copy temp selections to actual selections
+        selectedProductIds = new Set(tempSelectedProductIds);
+
+        // Update the selected products display
+        updateSelectedProductsDisplay();
+
+        // Close the selector modal
+        closeAddOfferProductSelector();
+    }
+
+    function updateSelectedProductsDisplay() {
+        const listEl = document.getElementById('selectedProductsList');
+        if (!listEl) return;
+
+        if (selectedProductIds.size === 0) {
+            listEl.innerHTML = '<div class="selected-products-empty">No products selected</div>';
+            return;
+        }
+
+        const selectedProducts = allProducts.filter(p => selectedProductIds.has(p.id));
+
+        listEl.innerHTML = selectedProducts.map(product => {
+            return `
+                <div class="selected-product-badge">
+                    <span>${product.name}</span>
+                    <button class="selected-product-badge-remove" onclick="removeSelectedProduct('${product.id}')" type="button">×</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function removeSelectedProduct(productId) {
+        selectedProductIds.delete(productId);
+        tempSelectedProductIds.delete(productId);
+        updateSelectedProductsDisplay();
+    }
+
+    // ========== END PRODUCT SELECTOR ==========
+
+    async function saveNewOffer() {
+        const nameInput = document.getElementById('offerName');
+        const slugInput = document.getElementById('offerSlug');
+        const activeInput = document.getElementById('offerActive');
+        const msgEl = document.getElementById('addOfferMessage');
+
+        // Validation
+        if (!nameInput || !nameInput.value.trim()) {
+            if (msgEl) {
+                msgEl.innerHTML = '<div class="alert alert-danger"><div class="alert-content">Please enter an offer name</div></div>';
+            }
+            return;
+        }
+
+        if (!slugInput || !slugInput.value.trim()) {
+            if (msgEl) {
+                msgEl.innerHTML = '<div class="alert alert-danger"><div class="alert-content">Please enter a slug</div></div>';
+            }
+            return;
+        }
+
+        const clientID = resolveClientId();
+        if (!clientID) {
+            if (msgEl) {
+                msgEl.innerHTML = '<div class="alert alert-danger"><div class="alert-content">No client ID found. Please select a client first.</div></div>';
+            }
+            return;
+        }
+
+        const slug = slugInput.value.trim();
+        const name = nameInput.value.trim();
+        const active = activeInput ? activeInput.checked : true;
+
+        try {
+            if (msgEl) {
+                msgEl.innerHTML = '<div class="alert alert-info"><div class="alert-content">Creating offer...</div></div>';
+            }
+
+            // Step 1: Load current offers
+            const getResponse = await authedFetch(`/admin/offers?clientID=${encodeURIComponent(clientID)}`, {
+                method: 'GET',
+                headers: {
+                    'X-Client-Id': clientID
+                }
+            });
+
+            if (!getResponse.ok) {
+                throw new Error(getResponse.body?.error || `Failed to load current offers: HTTP ${getResponse.status}`);
+            }
+
+            // Step 2: Add new offer to the offers object
+            const currentOffers = getResponse.body?.offers || {};
+
+            // Check if slug already exists
+            if (currentOffers[slug]) {
+                if (msgEl) {
+                    msgEl.innerHTML = '<div class="alert alert-danger"><div class="alert-content">An offer with this slug already exists</div></div>';
+                }
+                return;
+            }
+
+            // Add the new offer using slug as key
+            currentOffers[slug] = {
+                name: name,
+                active: active,
+                product_ids: Array.from(selectedProductIds)
+            };
+
+            // Step 3: Save the updated offers object
+            const putResponse = await authedFetch(`/admin/offers`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Client-Id': clientID
+                },
+                body: { offers: currentOffers }
+            });
+
+            if (!putResponse.ok) {
+                throw new Error(putResponse.body?.error || `HTTP ${putResponse.status}`);
+            }
+
+            // Success!
+            closeAddOfferModal();
+            setMsg('offersListMessage', `Offer "${name}" created successfully!`, 'success');
+
+            // Reload offers to show the new one
+            await loadOffersList();
+
+        } catch (error) {
+            console.error('Save new offer error:', error);
+            if (msgEl) {
+                msgEl.innerHTML = `<div class="alert alert-danger"><div class="alert-content">Failed to create offer: ${error.message}</div></div>`;
+            }
         }
     }
 
@@ -334,6 +771,16 @@ const dashboardOffersState = {
         editOffer,
         deleteOffer
     };
+
+    // Export add offer functions to window
+    window.openAddOfferProductSelector = openAddOfferProductSelector;
+    window.closeAddOfferProductSelector = closeAddOfferProductSelector;
+    window.toggleAddOfferProductSelection = toggleAddOfferProductSelection;
+    window.applyAddOfferProductSelection = applyAddOfferProductSelection;
+    window.removeSelectedProduct = removeSelectedProduct;
+    window.openAddOfferModal = openAddOfferModal;
+    window.closeAddOfferModal = closeAddOfferModal;
+
 })(window, document);
 
 // ======== AUTO-LOAD ON TAB SWITCH ========
@@ -1676,22 +2123,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Export functions
-window.loadOffers = loadOffers;
-window.removeOffer = removeOffer;
-window.handleAddOffer = handleAddOffer;
-window.handleRefreshOffers = handleRefreshOffers;
-window.handleSaveOffers = handleSaveOffers;
-window.openProductSelector = openProductSelector;
-window.closeProductSelector = closeProductSelector;
-window.toggleProductSelection = toggleProductSelection;
-window.applyProductSelection = applyProductSelection;
-window.filterProductSelector = filterProductSelector;
+// Export functions (for functions outside the main IIFE)
 window.setupOffersListeners = setupOffersListeners;
 window.initOffersTab = initOffersTab;
-window.moveProductUp = moveProductUp;
-window.moveProductDown = moveProductDown;
-window.removeProductFromOffer = removeProductFromOffer;
 
 // Setup listeners if DOM is ready
 if (document.readyState === 'loading') {
