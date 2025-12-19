@@ -408,6 +408,13 @@ const dashboardOffersState = {
 
     // ========== END PRODUCT SELECTOR ==========
 
+    // Clear product cache when environment changes
+    window.addEventListener('environmentChanged', () => {
+        allProducts = [];
+        selectedProductIds.clear();
+        tempSelectedProductIds.clear();
+    });
+
     async function saveNewOffer() {
         const nameInput = document.getElementById('offerName');
         const slugInput = document.getElementById('offerSlug');
@@ -2120,6 +2127,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }, 100);
         });
+    }
+});
+
+// Reload offers when environment changes (test/live)
+window.addEventListener('environmentChanged', (event) => {
+    console.log('Environment changed to:', event.detail?.env);
+
+    // Clear cached offers data
+    dashboardOffersState.offers = [];
+    offersAvailableProducts = [];
+
+    // Check if offers tab is currently active
+    const offersTab = document.querySelector('[data-tab="offers"]');
+    const offersContent = document.getElementById('offers');
+
+    if (offersTab && offersContent && offersContent.classList.contains('active')) {
+        // Offers tab is active, reload the data
+        console.log('Reloading offers for new environment...');
+
+        // Clear the current display
+        const cardsContainer = document.getElementById('offersCardsContainer');
+        if (cardsContainer) {
+            cardsContainer.innerHTML = '';
+        }
+
+        // Reload offers list
+        if (typeof loadOffersList === 'function') {
+            loadOffersList();
+        }
     }
 });
 
